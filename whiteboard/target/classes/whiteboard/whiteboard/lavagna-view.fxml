@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Import dei componenti JavaFX necessari -->
+
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.ColorPicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.shape.Circle?>
+
+<!--
+  L'idea è di usare un VBox per raggruppare le barre superiori,
+  un'area centrale (StackPane) per la mappa, e un pulsante flottante.
+-->
+
+<BorderPane prefHeight="785.0" prefWidth="1177.0" style="-fx-background-color: FAFBFD;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="whiteboard.whiteboard.LavagnaController">
+
+    <!-- Sezione TOP: racchiudiamo due HBox in un VBox -->
+    <top>
+        <VBox prefWidth="1177.0" spacing="0">
+
+            <!-- Prima barra in alto (logo, menu, immagine profilo) -->
+            <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-padding: 10; -fx-border-color: #E3E4E6; -fx-border-width: 2;">
+            <ImageView fx:id="mapView1" fitHeight="46.0" fitWidth="70.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/logo.png" />
+               </image>
+            </ImageView>
+                <!-- Logo / Titolo dell'app -->
+                <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="SketchIt" />
+
+                <!-- Spazio elastico per spingere i nodi a destra -->
+                <Pane prefHeight="30.0" prefWidth="500.0" HBox.hgrow="ALWAYS" />
+
+                <!-- Menu di navigazione -->
+                <Label style="-fx-font-size: 14px;" text="My Boards" />
+                <Label style="-fx-font-size: 14px;" text="Templates" />
+                <Label style="-fx-font-size: 14px;" text="Inspiration" />
+
+                <!-- Immagine profilo (segnaposto con un cerchio grigio) -->
+                <Circle fill="GRAY" radius="15" />
+            </HBox>
+
+            <!-- Seconda barra (nome lavagna e pulsante Share) -->
+            <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 5; -fx-border-color: #ddd; -fx-border-width: 0 0 1 0;">
+            <Pane prefHeight="47.0" prefWidth="31.0" />
+            <Pane prefHeight="47.0" prefWidth="46.0" />
+            <Pane prefHeight="47.0" prefWidth="1030.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px;">
+               <children>
+                  <Label layoutX="32.0" layoutY="8.0" prefHeight="33.0" prefWidth="624.0" style="-fx-font-size: 14px;" text="BOARD TITLE" />
+               </children>
+            </Pane>
+
+                <!-- Spazio elastico per spingere il pulsante a destra -->
+                <Pane prefHeight="47.0" prefWidth="111.0" HBox.hgrow="ALWAYS" />
+            </HBox>
+        </VBox>
+    </top>
+   <center>
+      <AnchorPane prefHeight="722.0" prefWidth="1144.0" BorderPane.alignment="CENTER">
+         <children>
+            <ImageView fx:id="pennaButton" fitHeight="46.0" fitWidth="70.0" layoutX="82.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/write.png" />
+               </image>
+            </ImageView>
+            <ImageView fx:id="gommaButton" fitHeight="46.0" fitWidth="70.0" layoutX="151.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/delete.png" />
+               </image>
+            </ImageView>
+            <ImageView fx:id="forme" fitHeight="46.0" fitWidth="70.0" layoutX="220.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/forme.png" />
+               </image>
+            </ImageView>
+            <ImageView fx:id="testoButton" fitHeight="46.0" fitWidth="70.0" layoutX="289.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/text.png" />
+               </image>
+            </ImageView>
+            <ImageView fx:id="tornaIndietro" fitHeight="46.0" fitWidth="70.0" layoutX="427.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/back.png" />
+               </image>
+            </ImageView>
+            <ImageView fx:id="immagini" fitHeight="46.0" fitWidth="70.0" layoutX="358.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/image.png" />
+               </image>
+            </ImageView>
+            <ImageView fx:id="condividi" fitHeight="53.0" fitWidth="159.0" layoutX="979.0" layoutY="31.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+               <image>
+                  <Image url="@img/share.png" />
+               </image>
+            </ImageView>
+            <AnchorPane layoutX="91.0" layoutY="124.0" prefHeight="518.0" prefWidth="996.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;">
+               <children>
+                  <Canvas fx:id="lavagna" height="500.0" layoutX="6.0" layoutY="8.0" width="984.0" />
+               </children>
+            </AnchorPane>
+            <AnchorPane fx:id="textBox" disable="true" layoutY="124.0" prefHeight="330.0" prefWidth="82.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">
+               <children>
+                  <ColorPicker fx:id="colorPicker" layoutX="4.0" layoutY="21.0" prefHeight="40.0" prefWidth="80.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px;">
+                     <value>
+                        <Color />
+                     </value>
+                  </ColorPicker>
+                  <Spinner fx:id="grandezzaLinea" layoutX="8.0" layoutY="78.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
+               </children></AnchorPane>
+            <AnchorPane fx:id="gommaBox" disable="true" layoutY="124.0" prefHeight="330.0" prefWidth="82.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">
+               <children>
+                  <Spinner fx:id="grandezzaGomma" layoutX="8.0" layoutY="21.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
+               </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+   </center>
+
+</BorderPane>
