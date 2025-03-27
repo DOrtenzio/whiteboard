@@ -3,6 +3,9 @@
 <!-- Import dei componenti JavaFX necessari -->
 
 <?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.ColorPicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Spinner?>
@@ -15,11 +18,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.shape.Circle?>
-
-<!--
-  L'idea è di usare un VBox per raggruppare le barre superiori,
-  un'area centrale (StackPane) per la mappa, e un pulsante flottante.
--->
+<?import javafx.scene.text.Font?>
 
 <BorderPane prefHeight="785.0" prefWidth="1177.0" style="-fx-background-color: FAFBFD;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="whiteboard.whiteboard.LavagnaController">
 
@@ -77,7 +76,7 @@
                   <Image url="@img/delete.png" />
                </image>
             </ImageView>
-            <ImageView fx:id="forme" fitHeight="46.0" fitWidth="70.0" layoutX="220.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+            <ImageView fx:id="figureButton" fitHeight="46.0" fitWidth="70.0" layoutX="220.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
                <image>
                   <Image url="@img/forme.png" />
                </image>
@@ -107,7 +106,7 @@
                   <Canvas fx:id="lavagna" height="500.0" layoutX="6.0" layoutY="8.0" width="984.0" />
                </children>
             </AnchorPane>
-            <AnchorPane fx:id="textBox" disable="true" layoutY="124.0" prefHeight="330.0" prefWidth="82.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">
+            <AnchorPane fx:id="textBox" disable="true" layoutY="124.0" prefHeight="330.0" prefWidth="88.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">
                <children>
                   <ColorPicker fx:id="colorPicker" layoutX="4.0" layoutY="21.0" prefHeight="40.0" prefWidth="80.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px;">
                      <value>
@@ -116,9 +115,38 @@
                   </ColorPicker>
                   <Spinner fx:id="grandezzaLinea" layoutX="8.0" layoutY="78.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
                </children></AnchorPane>
-            <AnchorPane fx:id="gommaBox" disable="true" layoutY="124.0" prefHeight="330.0" prefWidth="82.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">
+            <AnchorPane fx:id="gommaBox" disable="true" layoutY="124.0" prefHeight="330.0" prefWidth="88.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">
                <children>
-                  <Spinner fx:id="grandezzaGomma" layoutX="8.0" layoutY="21.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
+                  <Spinner fx:id="grandezzaGomma" layoutX="8.0" layoutY="35.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
+                  <Button fx:id="cBott" contentDisplay="CENTER" graphicTextGap="6.0" layoutX="4.0" layoutY="81.0" mnemonicParsing="false" onAction="#cancellaTutto" prefHeight="69.0" prefWidth="78.0" style="-fx-background-color: #1A80E4; -fx-border-color: #1A80E4; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-font-weight: 700;" text="Cancella tutto" textAlignment="CENTER" textFill="WHITE" wrapText="true">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Button>
+                  <Label layoutX="10.0" layoutY="6.0" prefHeight="25.0" prefWidth="69.0" text="Dimensione :" />
+               </children>
+            </AnchorPane>
+            <AnchorPane fx:id="figureBox" disable="true" layoutY="124.0" prefHeight="405.0" prefWidth="89.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">
+               <children>
+                  <Spinner fx:id="dim1" layoutX="8.0" layoutY="89.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
+                  <ChoiceBox fx:id="choiceFigure" layoutX="8.0" layoutY="34.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 12;" />
+                  <Label layoutX="8.0" layoutY="6.0" prefHeight="25.0" prefWidth="65.0" text="Figura:" />
+                  <Label layoutX="10.0" layoutY="165.0" prefHeight="25.0" prefWidth="73.0" text="Stile (Bordo):" />
+                  <Label layoutX="9.0" layoutY="65.0" prefHeight="25.0" prefWidth="65.0" text="Dimensioni:" />
+                  <Spinner fx:id="dim2" layoutX="9.0" layoutY="127.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
+                  <ColorPicker fx:id="colorPickerBordo" layoutX="4.0" layoutY="195.0" prefHeight="40.0" prefWidth="80.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px;">
+                     <value>
+                        <Color />
+                     </value>
+                  </ColorPicker>
+                  <Spinner fx:id="grandezzaBordo" layoutX="9.0" layoutY="242.0" prefHeight="26.0" prefWidth="70.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-width: 1.5; -fx-background-radius: 12; -fx-border-radius: 5;" />
+                  <Label layoutX="11.0" layoutY="285.0" prefHeight="25.0" prefWidth="73.0" text="Stile (Riemp.):" />
+                  <ColorPicker fx:id="colorPickerRiempimento" layoutX="5.0" layoutY="315.0" prefHeight="40.0" prefWidth="80.0" style="-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px;">
+                     <value>
+                        <Color />
+                     </value>
+                  </ColorPicker>
+                  <CheckBox fx:id="isTrasparente" layoutX="8.0" layoutY="365.0" mnemonicParsing="false" prefHeight="17.0" prefWidth="73.0" text="Vuoto" />
                </children>
             </AnchorPane>
          </children>
