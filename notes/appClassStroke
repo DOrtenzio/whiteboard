@@ -1,0 +1,46 @@
+public class Stroke {
+    private double startX, startY, endX, endY;
+    private Color color;
+    private double strokeWidth;
+
+    public Stroke(double startX, double startY, double endX, double endY, Color color, double strokeWidth) {
+        this.startX = startX;
+        this.startY = startY;
+        this.endX = endX;
+        this.endY = endY;
+        this.color = color;
+        this.strokeWidth = strokeWidth;
+    }
+
+    // Getter e setter per i dati
+
+    public double getStartX() {
+        return startX;
+    }
+
+    public double getStartY() {
+        return startY;
+    }
+
+    public double getEndX() {
+        return endX;
+    }
+
+    public double getEndY() {
+        return endY;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    public double getStrokeWidth() {
+        return strokeWidth;
+    }
+
+    public void draw(GraphicsContext gc) {
+        gc.setStroke(color);
+        gc.setLineWidth(strokeWidth);
+        gc.strokeLine(startX, startY, endX, endY);
+    }
+}
