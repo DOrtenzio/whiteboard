@@ -13,6 +13,8 @@ import javafx.util.Duration;
 import javafx.scene.shape.*;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 
 public class LavagnaController {
     // Riferimenti agli elementi grafici (Quelli di lavagna-view.fxml)
@@ -21,7 +23,7 @@ public class LavagnaController {
     @FXML
     private AnchorPane textBox, gommaBox, figureBox;
     @FXML
-    private ImageView pennaButton, gommaButton, testoButton, figureButton;
+    private ImageView pennaButton, gommaButton, testoButton, figureButton, undoButton;
     @FXML
     private ColorPicker colorPicker, colorPickerBordo, colorPickerRiempimento;
     @FXML
@@ -32,6 +34,9 @@ public class LavagnaController {
     private CheckBox isTrasparente;
     @FXML
     private Button cBott;
+
+    //Undo Stack
+    private Stack<Tratto> trattiDisegnati = new Stack<>();
 
     // Variabili
     private GraphicsContext contestoGrafico; // Contesto grafico
@@ -54,6 +59,7 @@ public class LavagnaController {
         contestoGrafico.setFill(Color.WHITE);
         contestoGrafico.fillRect(0, 0, lavagna.getWidth(), lavagna.getHeight());
 
+        //inizializzazioni di spinner ed altri elementi grafici
         colorPicker.setValue(Color.BLACK);
         grandezzaLinea.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 20, 2));
         grandezzaGomma.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 20, 2));
@@ -67,6 +73,7 @@ public class LavagnaController {
         gommaButton.setOnMouseClicked(e -> attivaCancellazione());
         testoButton.setOnMouseClicked(e -> attivaTesto());
         figureButton.setOnMouseClicked(e -> attivaFigure());
+        undoButton.setOnMouseClicked(e -> undo());
         lavagna.setOnMousePressed(this::clickMouseLavagna);
         lavagna.setOnMouseDragged(this::trascinoMouseLavagna);
         lavagna.setOnMouseReleased(this::rilascioMouseLavagna);
@@ -183,15 +190,38 @@ public class LavagnaController {
     }
 
     // EVENTI
+
+    //Eventi bottoni
+    public void undo() {
+        if (!trattiDisegnati.isEmpty()) {
+            // Rimuovi l'ultimo tratto
+            Tratto trattoRimosso = trattiDisegnati.pop();
+
+            // cancelliamo il tratto rimosso
+            contestoGrafico.clearRect(0, 0, lavagna.getWidth(), lavagna.getHeight());
+            for (Tratto t : trattiDisegnati) {
+                t.draw(this.contestoGrafico); // ridisegna i tratti
+            }
+        } else {
+            System.err.println("La pila è vuota!"); //TODO: Remove
+        }
+    }
+
     // Evento al click sul canvas
     private void clickMouseLavagna(MouseEvent mouse) {
-        if (isDisegnoActive) {
-            contestoGrafico.beginPath();
-            contestoGrafico.moveTo(mouse.getX(), mouse.getY());
+        if (isDisegnoActive) { //TODO FIX
+            Tratto nuovoTratto = new Tratto(mouse.getX(), mouse.getY(), colorPickerBordo.getValue(), grandezzaLinea.getValue());
+            trattiDisegnati.push(nuovoTratto);
+
+            // Aggiungi il nuovo punto al tratto corrente
+            Tratto ultimoTratto = trattiDisegnati.peek(); //Sbircio senza rimuovere
+            ultimoTratto.addPoint(mouse.getX(), mouse.getY());
+
             contestoGrafico.stroke();
         } else if (isGommaActive) {
             cancella(mouse.getX(), mouse.getY());
-        } else if (isFigureActive) {
+        } else if (isFigureActive)
+        {
             contestoGrafico.setStroke(colorPickerBordo.getValue());
             if (isTrasparente.isSelected()) contestoGrafico.setFill(Color.TRANSPARENT);
             else contestoGrafico.setFill(colorPickerRiempimento.getValue());
@@ -223,6 +253,7 @@ public class LavagnaController {
                 // Per centrare il parallelepipedo, sottraiamo metà di dim1S (larghezza) e metà di dim2S (altezza)
                 inizialeXF = mouse.getX() - dim1S / 2;
                 inizialeYF = mouse.getY() - dim2S / 2;
+
                 // L'offset serve per dare un effetto "3D" spostando leggermente la parte superiore
                 double offset = dim1S / 4.0;
                 // Calcolo dei quattro punti:
@@ -292,6 +323,11 @@ public class LavagnaController {
     private void trascinoMouseLavagna(MouseEvent mouse) {
         if (isDisegnoActive) {
             contestoGrafico.lineTo(mouse.getX(), mouse.getY());
+
+            // Aggiorna il tratto
+            Tratto ultimoTratto = trattiDisegnati.peek(); //Sbircio senza rimuovere
+            ultimoTratto.addPoint(mouse.getX(), mouse.getY());
+
             contestoGrafico.stroke();
         } else if (isGommaActive) {
             cancella(mouse.getX(), mouse.getY());
@@ -377,6 +413,11 @@ public class LavagnaController {
     private void rilascioMouseLavagna(MouseEvent mouse) {
         if (isDisegnoActive) {
             contestoGrafico.closePath();
+
+            // Aggiorna il tratto
+            Tratto ultimoTratto = trattiDisegnati.peek(); //Sbircio senza rimuovere
+            ultimoTratto.addPoint(mouse.getX(), mouse.getY());
+
         } else if (isFigureActive) {
             contestoGrafico.setStroke(colorPickerBordo.getValue());
             if (isTrasparente.isSelected()) contestoGrafico.setFill(Color.TRANSPARENT);
@@ -496,6 +537,7 @@ public class LavagnaController {
         translateTransition.setAutoReverse(false);
         translateTransition.play();
     }
+
 }
 
 /*
