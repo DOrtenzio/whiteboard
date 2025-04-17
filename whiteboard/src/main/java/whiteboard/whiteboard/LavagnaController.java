@@ -10,20 +10,20 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
-import javafx.scene.shape.*;
+//Locali
+import whiteboard.whiteboard.azioni.*;
+import whiteboard.whiteboard.azioni.figure.*;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
 
 public class LavagnaController {
     // Riferimenti agli elementi grafici (Quelli di lavagna-view.fxml)
     @FXML
     private Canvas lavagna;
     @FXML
-    private AnchorPane textBox, gommaBox, figureBox;
+    private AnchorPane lineaBox, gommaBox, figureBox;
     @FXML
-    private ImageView pennaButton, gommaButton, testoButton, figureButton, undoButton;
+    private ImageView pennaButton, gommaButton, figureButton, undoButton;
     @FXML
     private ColorPicker colorPicker, colorPickerBordo, colorPickerRiempimento;
     @FXML
@@ -35,13 +35,12 @@ public class LavagnaController {
     @FXML
     private Button cBott;
 
-    //Undo Stack
-    private Stack<Tratto> trattiDisegnati = new Stack<>();
+    //Stato Lavagna
+    ArrayList<Elementi> salvataggiLavagna =new ArrayList<Elementi>();
 
     // Variabili
     private GraphicsContext contestoGrafico; // Contesto grafico
-    private boolean isDisegnoActive = false; // Modalità penna attiva all'inizio
-    private boolean isTestoActive = false;   // Modalità testo disattivata all'inizio
+    private boolean isLineaActive = false; // Modalità penna disattiva all'inizio
     private boolean isGommaActive = false;     // Modalità gomma disattivata all'inizio
     private boolean isFigureActive = false;    // Modalità inserimento figure
 
@@ -49,467 +48,227 @@ public class LavagnaController {
     private String figuraSelezionata = "Rettangolo";
     private int dim1S = 100;
     private int dim2S = 100;
-    private double inizialeXF, inizialeYF; // Coordinate iniziali per il disegno
-    private ArrayList<Shape> figureInserite = new ArrayList<>(); // Lista delle forme disegnate
 
     @FXML
     public void initialize() {
         // Inizializza il contesto grafico e le variabili
         contestoGrafico = lavagna.getGraphicsContext2D();
+        sbiancaLavagna();
+        inizializzaControlli();
+
+        // Listener per azioni
+        setListenerBox();
+        pennaButton.setOnMouseClicked(e -> attivaScrittura());
+        gommaButton.setOnMouseClicked(e -> attivaCancellazione());
+        figureButton.setOnMouseClicked(e -> attivaFigure());
+        undoButton.setOnMouseClicked(e -> undo());
+        lavagna.setOnMousePressed(this::clickMouseLavagna);
+        lavagna.setOnMouseDragged(this::trascinoMouseLavagna);
+        lavagna.setOnMouseReleased(this::rilascioMouseLavagna);
+    }
+
+    private void sbiancaLavagna() {
         contestoGrafico.setFill(Color.WHITE);
         contestoGrafico.fillRect(0, 0, lavagna.getWidth(), lavagna.getHeight());
+    }
 
-        //inizializzazioni di spinner ed altri elementi grafici
+    private void inizializzaControlli() {
         colorPicker.setValue(Color.BLACK);
         grandezzaLinea.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 20, 2));
         grandezzaGomma.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 20, 2));
         dim1.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(10, 500, 100));
         dim2.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(10, 500, 100));
         grandezzaBordo.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 20, 10));
-
-        // Listener per azioni
-        setListenerBox();
-        pennaButton.setOnMouseClicked(e -> attivaScrittura());
-        gommaButton.setOnMouseClicked(e -> attivaCancellazione());
-        testoButton.setOnMouseClicked(e -> attivaTesto());
-        figureButton.setOnMouseClicked(e -> attivaFigure());
-        undoButton.setOnMouseClicked(e -> undo());
-        lavagna.setOnMousePressed(this::clickMouseLavagna);
-        lavagna.setOnMouseDragged(this::trascinoMouseLavagna);
-        lavagna.setOnMouseReleased(this::rilascioMouseLavagna);
-
-        // Attivo scrittura all'inizio
-        attivaScrittura();
     }
 
     @FXML
     private void setListenerBox() {
         // textBox
-        colorPicker.setOnAction(e -> contestoGrafico.setStroke(colorPicker.getValue()));
-        grandezzaLinea.valueProperty().addListener((obs, oldValue, newValue) -> contestoGrafico.setLineWidth(newValue));
+        colorPicker.setOnAction(e -> setColoreTratto(colorPicker.getValue()));
+        grandezzaLinea.valueProperty().addListener((obs, oldValue, newValue) -> setSpessoreLinea(newValue));
         // gommaBox
-        grandezzaGomma.valueProperty().addListener((obs, oldValue, newValue) -> contestoGrafico.setLineWidth(newValue));
+        grandezzaGomma.valueProperty().addListener((obs, oldValue, newValue) -> setSpessoreGomma(newValue));
         cBott.setOnMouseMoved(event -> cBott.setStyle("-fx-background-color: #1A80E4; -fx-border-color: #E9EEF4; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-font-weight: 700;"));
         cBott.setOnMouseExited(event -> cBott.setStyle("-fx-background-color: #1A80E4; -fx-border-color: #1A80E4; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-font-weight: 700;"));
         // figureBox
-        // Aggiungo tutte le figure disponibili
         choiceFigure.getItems().addAll("Rettangolo", "Cerchio", "Triangolo", "Parallelogramma", "Rombo");
         choiceFigure.setValue("Rettangolo"); // Predefinito
         choiceFigure.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             figuraSelezionata = newValue;
-            // Se si seleziona Cerchio o Triangolo, disabilito dim2
-            if ("Cerchio".equals(newValue) || "Triangolo".equals(newValue))
-                dim2.setDisable(true);
-            else
-                dim2.setDisable(false);
+            dim2.setDisable("Cerchio".equals(newValue) || "Triangolo".equals(newValue));
         });
-        dim1.valueProperty().addListener((obs, oldValue, newValue) -> { dim1S = newValue; });
-        dim2.valueProperty().addListener((obs, oldValue, newValue) -> { dim2S = newValue; });
-        colorPickerBordo.setOnAction(e -> contestoGrafico.setStroke(colorPickerBordo.getValue()));
-        colorPickerRiempimento.setOnAction(e -> contestoGrafico.setStroke(colorPickerRiempimento.getValue()));
-        grandezzaBordo.valueProperty().addListener((obs, oldValue, newValue) -> contestoGrafico.setLineWidth(newValue));
-        isTrasparente.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            colorPickerRiempimento.setDisable(newValue);
-        });
+        dim1.valueProperty().addListener((obs, oldValue, newValue) -> dim1S = newValue);
+        dim2.valueProperty().addListener((obs, oldValue, newValue) -> dim2S = newValue);
+        colorPickerBordo.setOnAction(e -> setColoreBordo(colorPickerBordo.getValue()));
+        colorPickerRiempimento.setOnAction(e -> setColoreRiempimento(colorPickerRiempimento.getValue()));
+        grandezzaBordo.valueProperty().addListener((obs, oldValue, newValue) -> setSpessoreBordo(newValue));
+        isTrasparente.selectedProperty().addListener((observable, oldValue, newValue) -> colorPickerRiempimento.setDisable(newValue));
     }
 
-    // MODALITÀ
+    /* Metodi per impostare le proprietà del contesto grafico */
+    //Linee
+    private void setColoreTratto(Color colore) { contestoGrafico.setStroke(colore); }
+    private void setSpessoreLinea(int spessore) { contestoGrafico.setLineWidth(spessore); }
+    private Color getColoreTratto(){ return colorPicker.getValue(); }
+    private int getSpessoreLinea(){ return grandezzaLinea.getValue(); }
+
+    //Gomma
+    private void setSpessoreGomma(int spessore) { contestoGrafico.setLineWidth(spessore); }
+    private int getSpessoreGomma(){ return grandezzaGomma.getValue(); }
+
+    //Figure
+    private void setColoreBordo(Color colore) { contestoGrafico.setStroke(colore); }
+    private void setColoreRiempimento(Color colore) { contestoGrafico.setFill(colore); }
+    private void setSpessoreBordo(int spessore) { contestoGrafico.setLineWidth(spessore); }
+    private Color getColoreBordo(){ return colorPickerBordo.getValue(); }
+    private Color getColoreRiempimento(){ return colorPickerRiempimento.getValue(); }
+    private int getSpessoreRiempimento(){ return grandezzaBordo.getValue(); }
+
+
+    /* MODALITA' GRAFICHE (Ovvero settaggi grafici basati sulle diverse azioni) */
+    private void attivaModalita(ImageView bottoneAttivato, AnchorPane pannelloDaMostrare) {
+        chiudiModalitaPrecedenti();
+        resetStiliBottoni();
+        evidenziaBottone(bottoneAttivato);
+        entrataPannello(pannelloDaMostrare); //Cioè l'anchor box associata alla modalità
+    }
+    private void chiudiModalitaPrecedenti() {
+        if (isLineaActive) {
+            uscitaPannello(lineaBox);
+        } else if (isGommaActive) {
+            uscitaPannello(gommaBox);
+        } else if (isFigureActive) {
+            uscitaPannello(figureBox);
+        }
+    }
+
     private void attivaScrittura() {
-        chiudiModalitaPrecedenti();
-        isDisegnoActive = true;
+        attivaModalita(pennaButton, lineaBox);
+        isLineaActive = true;
         isGommaActive = false;
-        isTestoActive = false;
         isFigureActive = false;
-
-        pennaButton.setStyle("-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px; -fx-border-width: 2;");
-        textBox.setVisible(true);
-        textBox.setDisable(false);
-        entrataAnchor(textBox, -300, 0);
-        contestoGrafico.setStroke(colorPicker.getValue());
-        contestoGrafico.setLineWidth(grandezzaLinea.getValue());
+        setColoreTratto(colorPicker.getValue());
+        setSpessoreLinea(grandezzaLinea.getValue());
     }
-
     private void attivaCancellazione() {
-        chiudiModalitaPrecedenti();
-        isDisegnoActive = false;
+        attivaModalita(gommaButton, gommaBox);
+        isLineaActive = false;
         isGommaActive = true;
-        isTestoActive = false;
         isFigureActive = false;
-
-        gommaButton.setStyle("-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px; -fx-border-width: 2;");
-        gommaBox.setVisible(true);
-        gommaBox.setDisable(false);
-        entrataAnchor(gommaBox, -300, 0);
-        contestoGrafico.setLineWidth(grandezzaGomma.getValue());
+        setSpessoreGomma(grandezzaGomma.getValue());
     }
-
-    // Attiva la modalità testo
-    private void attivaTesto() {
-        chiudiModalitaPrecedenti();
-        isDisegnoActive = false;
-        isGommaActive = false;
-        isTestoActive = true;
-        isFigureActive = false;
-    }
-
-    // Attiva la modalità figure
     private void attivaFigure() {
-        chiudiModalitaPrecedenti();
-        isDisegnoActive = false;
+        attivaModalita(figureButton, figureBox);
+        isLineaActive = false;
         isGommaActive = false;
-        isTestoActive = false;
         isFigureActive = true;
-
-        figureButton.setStyle("-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px; -fx-border-width: 2;");
-        figureBox.setVisible(true);
-        figureBox.setDisable(false);
-        entrataAnchor(figureBox, -300, 0);
         figuraSelezionata = choiceFigure.getValue();
         dim1S = dim1.getValue();
         dim2S = dim2.getValue();
     }
 
-    // CHIUSURA MODALITÀ
-    private void chiudiModalitaPrecedenti() {
-        if (isDisegnoActive) {
-            entrataAnchor(textBox, 0, -300);
-            textBox.setVisible(false);
-            textBox.setDisable(true);
-            pennaButton.setStyle("-fx-background-color: #E2EAE3;");
-        } else if (isGommaActive) {
-            entrataAnchor(gommaBox, 0, -300);
-            gommaBox.setVisible(false);
-            gommaBox.setDisable(true);
-            gommaButton.setStyle("-fx-background-color: #E2EAE3;");
-        } else if (isFigureActive) {
-            entrataAnchor(figureBox, 0, -300);
-            figureBox.setVisible(false);
-            figureBox.setDisable(true);
-            figureButton.setStyle("-fx-background-color: #E2EAE3;");
-        }
+    //Azioni Grafiche ed animazioni
+    private void resetStiliBottoni() {
+        pennaButton.setStyle("-fx-background-color: #E2EAE3;");
+        gommaButton.setStyle("-fx-background-color: #E2EAE3;");
+        figureButton.setStyle("-fx-background-color: #E2EAE3;");
+    }
+    private void evidenziaBottone(ImageView bottone) { bottone.setStyle("-fx-background-color: E9EEF4; -fx-border-color: E9EEF4; -fx-border-radius: 12px; -fx-background-radius: 12px; -fx-border-width: 2;"); }
+
+    private void entrataPannello(AnchorPane pannello) {
+        pannello.setVisible(true);
+        pannello.setDisable(false);
+        entrataAnchor(pannello, -300, 0);
+    }
+    private void uscitaPannello(AnchorPane pannello) {
+        entrataAnchor(pannello, 0, -300);
+        pannello.setVisible(false);
+        pannello.setDisable(true);
     }
 
-    // EVENTI
-
-    //Eventi bottoni
-    public void undo() {
-        if (!trattiDisegnati.isEmpty()) {
-            // Rimuovi l'ultimo tratto
-            Tratto trattoRimosso = trattiDisegnati.pop();
-
-            // cancelliamo il tratto rimosso
-            contestoGrafico.clearRect(0, 0, lavagna.getWidth(), lavagna.getHeight());
-            for (Tratto t : trattiDisegnati) {
-                t.draw(this.contestoGrafico); // ridisegna i tratti
-            }
-        } else {
-            System.err.println("La pila è vuota!"); //TODO: Remove
-        }
-    }
-
-    // Evento al click sul canvas
+    /* Gestione del canvas ovvero Disegno effettivo*/
     private void clickMouseLavagna(MouseEvent mouse) {
-        if (isDisegnoActive) { //TODO FIX
-            Tratto nuovoTratto = new Tratto(mouse.getX(), mouse.getY(), colorPickerBordo.getValue(), grandezzaLinea.getValue());
-            trattiDisegnati.push(nuovoTratto);
-
-            // Aggiungi il nuovo punto al tratto corrente
-            Tratto ultimoTratto = trattiDisegnati.peek(); //Sbircio senza rimuovere
-            ultimoTratto.addPoint(mouse.getX(), mouse.getY());
-
-            contestoGrafico.stroke();
+        if (isLineaActive) {
+            iniziaLinea(mouse.getX(), mouse.getY());
         } else if (isGommaActive) {
             cancella(mouse.getX(), mouse.getY());
-        } else if (isFigureActive)
-        {
-            contestoGrafico.setStroke(colorPickerBordo.getValue());
-            if (isTrasparente.isSelected()) contestoGrafico.setFill(Color.TRANSPARENT);
-            else contestoGrafico.setFill(colorPickerRiempimento.getValue());
-            // Per le figure, calcoliamo le coordinate iniziali centrando la forma attorno al punto cliccato
-            if ("Triangolo".equals(figuraSelezionata)) {
-                double lato = dim1S;
-                // Calcola l'altezza del triangolo equilatero usando la formula: altezza = (√3 / 2) * lato
-                double altezza = Math.sqrt(3) / 2 * lato;
-                // Per centrare il triangolo, si sottrae metà del lato (per la X) e metà dell'altezza (per la Y)
-                inizialeXF = mouse.getX() - lato / 2;
-                inizialeYF = mouse.getY() - altezza / 2;
-                // Calcolo dei punti:
-                // Il vertice superiore (centro della base): si trova a metà del lato in X, sulla linea superiore in Y
-                // Gli altri due punti si trovano agli estremi sinistro e destro, spostati lungo l'altezza
-                double[] xPoints = {
-                        inizialeXF + lato / 2, // Vertice superiore: centro in X
-                        inizialeXF,            // Vertice sinistro
-                        inizialeXF + lato      // Vertice destro
-                };
-                double[] yPoints = {
-                        inizialeYF,            // Vertice superiore: posizione Y iniziale
-                        inizialeYF + altezza,  // Vertice sinistro: in basso
-                        inizialeYF + altezza   // Vertice destro: in basso
-                };
-
-                contestoGrafico.fillPolygon(xPoints, yPoints, 3);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 3);
-            } else if ("Parallelogramma".equals(figuraSelezionata)) {
-                // Per centrare il parallelepipedo, sottraiamo metà di dim1S (larghezza) e metà di dim2S (altezza)
-                inizialeXF = mouse.getX() - dim1S / 2;
-                inizialeYF = mouse.getY() - dim2S / 2;
-
-                // L'offset serve per dare un effetto "3D" spostando leggermente la parte superiore
-                double offset = dim1S / 4.0;
-                // Calcolo dei quattro punti:
-                // Punto in alto a sinistra: inizialeXF + offset (X) e inizialeYF (Y)
-                // Punto in alto a destra: inizialeXF + dim1S + offset (X) e inizialeYF (Y)
-                // Punto in basso a destra: inizialeXF + dim1S (X) e inizialeYF + dim2S (Y)
-                // Punto in basso a sinistra: inizialeXF (X) e inizialeYF + dim2S (Y)
-                double[] xPoints = {
-                        inizialeXF + offset,
-                        inizialeXF + dim1S + offset,
-                        inizialeXF + dim1S,
-                        inizialeXF
-                };
-                double[] yPoints = {
-                        inizialeYF,
-                        inizialeYF,
-                        inizialeYF + dim2S,
-                        inizialeYF + dim2S
-                };
-
-                contestoGrafico.fillPolygon(xPoints, yPoints, 4);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 4);
-            } else if ("Rombo".equals(figuraSelezionata)) {
-                // Per centrare il rombo, si usano le dimensioni dim1S e dim2S
-                inizialeXF = mouse.getX() - dim1S / 2;
-                inizialeYF = mouse.getY() - dim2S / 2;
-                // Calcolo dei punti:
-                // Il primo punto è il vertice superiore, a metà della larghezza
-                // Il secondo punto è il vertice destro, a metà dell'altezza in basso
-                // Il terzo punto è il vertice inferiore, a metà della larghezza
-                // Il quarto punto è il vertice sinistro, a metà dell'altezza in alto
-                double[] xPoints = {
-                        inizialeXF + dim1S / 2, // Vertice superiore
-                        inizialeXF + dim1S,     // Vertice destro
-                        inizialeXF + dim1S / 2, // Vertice inferiore
-                        inizialeXF             // Vertice sinistro
-                };
-                double[] yPoints = {
-                        inizialeYF,               // Vertice superiore
-                        inizialeYF + dim2S / 2,     // Vertice destro
-                        inizialeYF + dim2S,         // Vertice inferiore
-                        inizialeYF + dim2S / 2      // Vertice sinistro
-                };
-
-                contestoGrafico.fillPolygon(xPoints, yPoints, 4);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 4);
-            } else if ("Rettangolo".equals(figuraSelezionata)) {
-                // Centriamo il rettangolo sottraendo metà della larghezza (dim1S) e metà dell'altezza (dim2S)
-                inizialeXF = mouse.getX() - dim1S / 2;
-                inizialeYF = mouse.getY() - dim2S / 2;
-
-                contestoGrafico.fillRect(inizialeXF, inizialeYF, dim1S, dim2S);
-                contestoGrafico.strokeRect(inizialeXF, inizialeYF, dim1S, dim2S);
-            } else if ("Cerchio".equals(figuraSelezionata)) {
-                // Per il cerchio, consideriamo dim1S come diametro, centrando sottraendo metà del diametro
-                inizialeXF = mouse.getX() - dim1S / 2;
-                inizialeYF = mouse.getY() - dim1S / 2;
-
-                contestoGrafico.fillOval(inizialeXF, inizialeYF, dim1S, dim1S);
-                contestoGrafico.strokeOval(inizialeXF, inizialeYF, dim1S, dim1S);
-            }
+        } else if (isFigureActive) {
+            disegnaFigura(mouse.getX(), mouse.getY());
         }
+    }
+
+    private void iniziaLinea(double x, double y) {
+        contestoGrafico.beginPath();
+        contestoGrafico.moveTo(x, y); //Imposto il punto di partenza del path non muovo nulla
+        contestoGrafico.stroke(); //NB x Diego (Che non si ricorda una minchia) : Questo fa solo il contorno non il riempimento
+
+        salvataggiLavagna.add(new Linea(x,y,getColoreTratto(),getSpessoreLinea()));
+    }
+    private void disegnaFigura(double x, double y) {
+        impostaStiliFigura(); // Impostiamo i colori e i bordi
+        Figura figura = null;
+        Color colore;
+
+        if (isTrasparente.isSelected()) colore=Color.TRANSPARENT;
+        else colore=getColoreRiempimento();
+
+        if ("Triangolo".equals(figuraSelezionata)) {
+            figura = new Triangolo(x, y, dim1S, dim2S, getColoreBordo(), colore, getSpessoreRiempimento());
+        } else if ("Parallelogramma".equals(figuraSelezionata)) {
+            figura = new Parallelogramma(x, y, dim1S, dim2S, getColoreBordo(), colore, getSpessoreRiempimento());
+        } else if ("Rombo".equals(figuraSelezionata)) {
+            figura = new Rombo(x, y, dim1S, dim2S, getColoreBordo(), colore, getSpessoreRiempimento());
+        } else if ("Rettangolo".equals(figuraSelezionata)) {
+            figura = new Rettangolo(x, y, dim1S, dim2S, getColoreBordo(), colore, getSpessoreRiempimento());
+        } else if ("Cerchio".equals(figuraSelezionata)) {
+            figura = new Cerchio(x, y, dim1S, getColoreBordo(), colore, getSpessoreRiempimento());
+        }
+
+        if (figura != null) { //Si potrebbe evitare ma meglio così no?!
+            figura.disegna(contestoGrafico,lavagna);
+            salvataggiLavagna.add(figura);
+        }
+    }
+    private void impostaStiliFigura() {
+        setColoreBordo(colorPickerBordo.getValue());
+        if (isTrasparente.isSelected()) setColoreRiempimento(Color.TRANSPARENT);
+        else setColoreRiempimento(colorPickerRiempimento.getValue());
+        setSpessoreBordo(grandezzaBordo.getValue());
     }
 
     // Evento di trascinamento del mouse sul canvas
     @FXML
     private void trascinoMouseLavagna(MouseEvent mouse) {
-        if (isDisegnoActive) {
-            contestoGrafico.lineTo(mouse.getX(), mouse.getY());
-
-            // Aggiorna il tratto
-            Tratto ultimoTratto = trattiDisegnati.peek(); //Sbircio senza rimuovere
-            ultimoTratto.addPoint(mouse.getX(), mouse.getY());
-
-            contestoGrafico.stroke();
+        if (isLineaActive) {
+            continuaLinea(mouse.getX(), mouse.getY());
         } else if (isGommaActive) {
             cancella(mouse.getX(), mouse.getY());
         } else if (isFigureActive) {
-            contestoGrafico.setStroke(colorPickerBordo.getValue());
-            if (isTrasparente.isSelected()) contestoGrafico.setFill(Color.TRANSPARENT);
-            else contestoGrafico.setFill(colorPickerRiempimento.getValue());
-            // Aggiorniamo il disegno in tempo reale durante il trascinamento
-            if ("Triangolo".equals(figuraSelezionata)) {
-                double lato = dim1S;
-                double altezza = Math.sqrt(3) / 2 * lato;
-                // Calcolo delle coordinate correnti centrate sul cursore
-                double correnteXF = mouse.getX() - lato / 2;
-                double correnteYF = mouse.getY() - altezza / 2;
-                double[] xPoints = {
-                        correnteXF + lato / 2, // Vertice superiore
-                        correnteXF,            // Vertice sinistro
-                        correnteXF + lato      // Vertice destro
-                };
-                double[] yPoints = {
-                        correnteYF,            // Vertice superiore
-                        correnteYF + altezza,  // Vertice sinistro
-                        correnteYF + altezza   // Vertice destro
-                };
-
-                contestoGrafico.fillPolygon(xPoints, yPoints, 3);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 3);
-            } else if ("Parallelogramma".equals(figuraSelezionata)) {
-                double correnteXF = mouse.getX() - dim1S / 2;
-                double correnteYF = mouse.getY() - dim2S / 2;
-                double offset = dim1S / 4.0;
-                double[] xPoints = {
-                        correnteXF + offset,
-                        correnteXF + dim1S + offset,
-                        correnteXF + dim1S,
-                        correnteXF
-                };
-                double[] yPoints = {
-                        correnteYF,
-                        correnteYF,
-                        correnteYF + dim2S,
-                        correnteYF + dim2S
-                };
-
-                contestoGrafico.fillPolygon(xPoints, yPoints, 4);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 4);
-            } else if ("Rombo".equals(figuraSelezionata)) {
-                double correnteXF = mouse.getX() - dim1S / 2;
-                double correnteYF = mouse.getY() - dim2S / 2;
-                double[] xPoints = {
-                        correnteXF + dim1S / 2, // Vertice superiore
-                        correnteXF + dim1S,     // Vertice destro
-                        correnteXF + dim1S / 2, // Vertice inferiore
-                        correnteXF             // Vertice sinistro
-                };
-                double[] yPoints = {
-                        correnteYF,               // Vertice superiore
-                        correnteYF + dim2S / 2,     // Vertice destro
-                        correnteYF + dim2S,         // Vertice inferiore
-                        correnteYF + dim2S / 2      // Vertice sinistro
-                };
-
-                contestoGrafico.fillPolygon(xPoints, yPoints, 4);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 4);
-            } else if ("Rettangolo".equals(figuraSelezionata)) {
-                double correnteXF = mouse.getX() - dim1S / 2;
-                double correnteYF = mouse.getY() - dim2S / 2;
-
-                contestoGrafico.fillRect(correnteXF, correnteYF, dim1S, dim2S);
-                contestoGrafico.strokeRect(correnteXF, correnteYF, dim1S, dim2S);
-            } else if ("Cerchio".equals(figuraSelezionata)) {
-                double correnteXF = mouse.getX() - dim1S / 2;
-                double correnteYF = mouse.getY() - dim1S / 2;
-
-                contestoGrafico.fillOval(correnteXF, correnteYF, dim1S, dim1S);
-                contestoGrafico.strokeOval(correnteXF, correnteYF, dim1S, dim1S);
-            }
+            //anteprimaDisegnoFigura(mouse.getX(), mouse.getY());
         }
+    }
+
+    private void continuaLinea(double x, double y) {
+        contestoGrafico.lineTo(x, y);
+        contestoGrafico.stroke();
+
+        Linea linea=(Linea) salvataggiLavagna.getLast();
+        linea.continuaA(x,y);
     }
 
     // Evento al rilascio del mouse sul canvas
     @FXML
     private void rilascioMouseLavagna(MouseEvent mouse) {
-        if (isDisegnoActive) {
-            contestoGrafico.closePath();
-
-            // Aggiorna il tratto
-            Tratto ultimoTratto = trattiDisegnati.peek(); //Sbircio senza rimuovere
-            ultimoTratto.addPoint(mouse.getX(), mouse.getY());
-
+        if (isLineaActive) {
+            terminaDisegno();
         } else if (isFigureActive) {
-            contestoGrafico.setStroke(colorPickerBordo.getValue());
-            if (isTrasparente.isSelected()) contestoGrafico.setFill(Color.TRANSPARENT);
-            else contestoGrafico.setFill(colorPickerRiempimento.getValue());
-            // Disegno finale, usando le coordinate finali in base al punto in cui il mouse viene rilasciato
-            Shape figura = null;
-            if ("Triangolo".equals(figuraSelezionata)) {
-                double lato = dim1S;
-                double altezza = Math.sqrt(3) / 2 * lato;
-                // Le coordinate finali centrano il triangolo sul punto di rilascio del mouse
-                double correnteX = mouse.getX() - lato / 2;
-                double correnteY = mouse.getY() - altezza / 2;
-                double[] xPoints = {
-                        correnteX + lato / 2, // Vertice superiore
-                        correnteX,            // Vertice sinistro
-                        correnteX + lato      // Vertice destro
-                };
-                double[] yPoints = {
-                        correnteY,            // Vertice superiore
-                        correnteY + altezza,  // Vertice sinistro
-                        correnteY + altezza   // Vertice destro
-                };
-                Polygon triangolo = new Polygon();
-                triangolo.getPoints().addAll(xPoints[0], yPoints[0], xPoints[1], yPoints[1], xPoints[2], yPoints[2]);
-                figura = triangolo;
-                contestoGrafico.fillPolygon(xPoints, yPoints, 3);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 3);
-            } else if ("Parallelogramma".equals(figuraSelezionata)) {
-                double correnteX = mouse.getX() - dim1S / 2;
-                double correnteY = mouse.getY() - dim2S / 2;
-                double offset = dim1S / 4.0;
-                double[] xPoints = {
-                        correnteX + offset,
-                        correnteX + dim1S + offset,
-                        correnteX + dim1S,
-                        correnteX
-                };
-                double[] yPoints = {
-                        correnteY,
-                        correnteY,
-                        correnteY + dim2S,
-                        correnteY + dim2S
-                };
-                Polygon parallelepipedo = new Polygon();
-                parallelepipedo.getPoints().addAll(xPoints[0], yPoints[0], xPoints[1], yPoints[1],
-                        xPoints[2], yPoints[2], xPoints[3], yPoints[3]);
-                figura = parallelepipedo;
-                contestoGrafico.fillPolygon(xPoints, yPoints, 4);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 4);
-            } else if ("Rombo".equals(figuraSelezionata)) {
-                double correnteX = mouse.getX() - dim1S / 2;
-                double correnteY = mouse.getY() - dim2S / 2;
-                double[] xPoints = {
-                        correnteX + dim1S / 2, // Vertice superiore
-                        correnteX + dim1S,     // Vertice destro
-                        correnteX + dim1S / 2, // Vertice inferiore
-                        correnteX             // Vertice sinistro
-                };
-                double[] yPoints = {
-                        correnteY,
-                        correnteY + dim2S / 2,
-                        correnteY + dim2S,
-                        correnteY + dim2S / 2
-                };
-                Polygon rombo = new Polygon();
-                rombo.getPoints().addAll(xPoints[0], yPoints[0], xPoints[1], yPoints[1],
-                        xPoints[2], yPoints[2], xPoints[3], yPoints[3]);
-                figura = rombo;
-                contestoGrafico.fillPolygon(xPoints, yPoints, 4);
-                contestoGrafico.strokePolygon(xPoints, yPoints, 4);
-            } else if ("Rettangolo".equals(figuraSelezionata)) {
-                double correnteX = mouse.getX() - dim1S / 2;
-                double correnteY = mouse.getY() - dim2S / 2;
-                figura = new Rectangle(correnteX, correnteY, dim1S, dim2S);
-                // Qui si usa la coordinata iniziale precedentemente calcolata per il fill
-                contestoGrafico.fillRect(inizialeXF, inizialeYF, dim1S, dim2S);
-                contestoGrafico.strokeRect(correnteX, correnteY, dim1S, dim2S);
-            } else if ("Cerchio".equals(figuraSelezionata)) {
-                double correnteX = mouse.getX() - dim1S / 2;
-                double correnteY = mouse.getY() - dim1S / 2;
-                figura = new Circle(correnteX, correnteY, dim1S);
-                // Anche qui, si usa la coordinata iniziale per il disegno dell'oval
-                contestoGrafico.fillOval(inizialeXF, inizialeYF, dim1S, dim1S);
-                contestoGrafico.strokeOval(correnteX, correnteY, dim1S, dim1S);
-            }
-            // Se la figura è stata creata, la aggiungiamo alla lista delle figure inserite
-            if (figura != null) {
-                figureInserite.add(figura);
-            }
+            //finalizzaDisegnoFigura(mouse.getX(), mouse.getY());
         }
     }
 
+    private void terminaDisegno() {
+        contestoGrafico.closePath();
+    }
 
     // Funzione per cancellare una parte del disegno
     @FXML
@@ -518,12 +277,21 @@ public class LavagnaController {
         contestoGrafico.fillRect(x - (double) grandezzaGomma.getValue() / 2,
                 y - (double) grandezzaGomma.getValue() / 2,
                 grandezzaGomma.getValue(), grandezzaGomma.getValue());
+        salvataggiLavagna.add(new Gomma("GOMMA",x,y,(double) grandezzaGomma.getValue()));
     }
 
     @FXML
     protected void cancellaTutto() {
-        contestoGrafico.setFill(Color.WHITE);
-        contestoGrafico.fillRect(0, 0, lavagna.getWidth(), lavagna.getHeight());
+        sbiancaLavagna();
+        salvataggiLavagna.add(new Gomma("GOMMA_TOTALE",0,0,0));
+    }
+
+    //Undo
+    @FXML
+    private void undo(){
+        sbiancaLavagna(); //Pulisci la lavagna
+        salvataggiLavagna.removeLast();
+        for (Elementi elemento: salvataggiLavagna) elemento.disegna(contestoGrafico,lavagna);
     }
 
     // UTILITÀ
@@ -537,12 +305,4 @@ public class LavagnaController {
         translateTransition.setAutoReverse(false);
         translateTransition.play();
     }
-
 }
-
-/*
-Step per il disegno di un tratto:
-    1) Mouse premuto: Inizia un nuovo percorso, posizionando il punto iniziale.
-    2) Mouse trascinato: Disegna la linea seguendo il movimento del mouse.
-    3) Mouse rilasciato: Termina il percorso.
-*/

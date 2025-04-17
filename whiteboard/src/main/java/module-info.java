@@ -5,4 +5,6 @@ module whiteboard.whiteboard {
 
     opens whiteboard.whiteboard to javafx.fxml;
     exports whiteboard.whiteboard;
+    exports whiteboard.whiteboard.azioni;
+    opens whiteboard.whiteboard.azioni to javafx.fxml;
 }
