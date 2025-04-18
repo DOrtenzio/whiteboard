@@ -93,7 +93,7 @@ public class ClientController {
 
     @FXML
     public LavagnaController cambiaLavagnaView(String lavagnaNome, Stato statoLavagna) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("lavagna-view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/whiteboard/whiteboard/lavagna-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1178, 785);
         Stage stage = (Stage) anchorApp.getScene().getWindow();
         stage.setResizable(false);
