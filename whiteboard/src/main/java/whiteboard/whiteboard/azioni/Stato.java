@@ -3,7 +3,7 @@ package whiteboard.whiteboard.azioni;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import whiteboard.whiteboard.Client;
+import whiteboard.whiteboard.client.Client;
 
 import java.util.ArrayList;
 

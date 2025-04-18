@@ -11,5 +11,9 @@ module whiteboard.whiteboard {
 
     exports whiteboard.whiteboard.azioni.figure;
     opens whiteboard.whiteboard.azioni.figure to com.fasterxml.jackson.databind;
+    exports whiteboard.whiteboard.client;
+    opens whiteboard.whiteboard.client to javafx.fxml;
+    exports whiteboard.whiteboard.server;
+    opens whiteboard.whiteboard.server to javafx.fxml;
 
 }
