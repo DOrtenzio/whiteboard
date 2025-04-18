@@ -12,7 +12,9 @@ public class Stato {
     @JsonIgnore
     private Client client;
 
-    public Stato(){}
+    public Stato(){
+        this.salvataggiLavagna = new ArrayList<>();
+    }
     public Stato(Client client){
         salvataggiLavagna =new ArrayList<Elementi>();
         this.client=client;

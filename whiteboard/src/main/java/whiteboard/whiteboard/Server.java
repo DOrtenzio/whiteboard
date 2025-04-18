@@ -1,5 +1,6 @@
 package whiteboard.whiteboard;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import javafx.scene.paint.Color;
@@ -31,6 +32,7 @@ public class Server {
         colorModule.addSerializer(Color.class, new ColorSerializer());
         colorModule.addDeserializer(Color.class, new ColorDeserializer());
         mapper.registerModule(colorModule);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         System.out.println("[SERVER] Server avviato sulla porta " + port);
     }
@@ -51,48 +53,61 @@ public class Server {
     private void gestisciClient(Socket socket) {
         String clientAddress = socket.getInetAddress().getHostAddress();
         System.out.println("[SERVER][CLIENT " + clientAddress + "] Inizio gestione client.");
+
+        // Variabile di sessione per tenere traccia dell'ID della lavagna corrente
+        String idLavagna = null;
+
         try (
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true)
         ) {
+            // Invio messaggio di connessione accettata
             Logs messaggioConnessione = new Logs("CONNECTION_ACCEPTED", null);
-            String messaggioConnessioneJson = mapper.writeValueAsString(messaggioConnessione);
-            out.println(messaggioConnessioneJson);
-            System.out.println("[SERVER][CLIENT " + clientAddress + "] Messaggio inviato al client: " + messaggioConnessioneJson);
+            out.println(mapper.writeValueAsString(messaggioConnessione));
 
             String line;
             while ((line = in.readLine()) != null) {
                 System.out.println("[SERVER][CLIENT " + clientAddress + "] Ricevuta richiesta: " + line);
-                try {
-                    Logs richiesta = mapper.readValue(line, Logs.class);
-                    String comando = richiesta.getNomeDelComando();
-                    System.out.println("[SERVER][CLIENT " + clientAddress + "] Comando ricevuto: " + comando);
+                Logs richiesta = mapper.readValue(line, Logs.class);
+                String comando = richiesta.getNomeDelComando();
 
-                    if ("LAVAGNA_NEW".equals(comando)) {
-                        String nomeLavagna = richiesta.getParametro1();
-                        System.out.println("[SERVER][CLIENT " + clientAddress + "] Richiesta creazione nuova lavagna con nome: " + nomeLavagna);
-                        creaNuovaLavagna(nomeLavagna, in, out, socket);
-                    } else if ("LAVAGNA_OLD".equals(comando)) {
-                        String idLavagna = richiesta.getParametro1();
-                        System.out.println("[SERVER][CLIENT " + clientAddress + "] Richiesta connessione a lavagna esistente con ID: " + idLavagna);
+                switch (comando) {
+                    case "LAVAGNA_NEW":
+                        // Creo nuova lavagna e salvo l'ID
+                        idLavagna = creaNuovaLavagna(richiesta.getParametro1(), in, out, socket);
+                        break;
+
+                    case "LAVAGNA_OLD":
+                        // Mi connetto a una lavagna esistente e salvo l'ID
+                        idLavagna = richiesta.getParametro1();
                         connettiALavagnaEsistente(idLavagna, in, out, socket);
-                    }  else if ("LAVAGNA_UPDATE".equals(comando)) {
+                        break;
+
+                    case "LAVAGNA_UPDATE":
+                        if (idLavagna == null) {
+                            // Nessuna lavagna selezionata: invio errore
+                            Logs err = new Logs("ERR_NO_BOARD_SELECTED", null);
+                            out.println(mapper.writeValueAsString(err));
+                            break;
+                        }
+                        // Parametro1 contiene il JSON dello stato
                         String statoJson = richiesta.getParametro1();
+                        System.err.println("[DEBUG] parametro1: " + richiesta.getParametro1());
                         Stato nuovoStato = mapper.readValue(statoJson, Stato.class);
-                        statiLavagne.put(richiesta.getParametro1(), nuovoStato);
-                        broadcastStato(richiesta.getParametro1(), nuovoStato, out);
-                    }else {
-                        System.out.println("[SERVER][CLIENT " + clientAddress + "] Comando non riconosciuto: " + comando);
+
+                        // Aggiorno la mappa e faccio il broadcast usando l'ID salvato
+                        statiLavagne.put(idLavagna, nuovoStato);
+                        broadcastStato(idLavagna, nuovoStato, out);
+                        break;
+
+                    default:
+                        // Comando non riconosciuto
                         Logs messaggioErrore = new Logs("COMANDO_NON_RICONOSCIUTO", null);
-                        String messaggioErroreJson = mapper.writeValueAsString(messaggioErrore);
-                        out.println(messaggioErroreJson);
-                        System.out.println("[SERVER][CLIENT " + clientAddress + "] Inviato errore: " + messaggioErroreJson);
-                    }
-                } catch (IOException e) {
-                    System.err.println("[SERVER][CLIENT " + clientAddress + "] Errore nella lettura della richiesta del client: " + e.getMessage());
-                    break; // Interrompi la comunicazione con questo client in caso di errore di lettura
+                        out.println(mapper.writeValueAsString(messaggioErrore));
+                        break;
                 }
             }
+
         } catch (IOException e) {
             System.err.println("[SERVER][CLIENT " + clientAddress + "] Errore durante la gestione del client: " + e.getMessage());
         } finally {
@@ -100,12 +115,12 @@ public class Server {
                 socket.close();
                 System.out.println("[SERVER][CLIENT " + clientAddress + "] Connessione chiusa.");
             } catch (IOException e) {
-                System.err.println("[SERVER][CLIENT " + clientAddress + "] Errore durante la chiusura del socket del client: " + e.getMessage());
+                System.err.println("[SERVER][CLIENT " + clientAddress + "] Errore chiusura socket: " + e.getMessage());
             }
         }
     }
 
-    private void creaNuovaLavagna(String nomeLavagna, BufferedReader in, PrintWriter out, Socket socket) throws IOException {
+    private String creaNuovaLavagna(String nomeLavagna, BufferedReader in, PrintWriter out, Socket socket) throws IOException {
         String clientAddress = socket.getInetAddress().getHostAddress();
         String idLavagna = UUID.randomUUID().toString();
         nomiLavagne.put(idLavagna, nomeLavagna);
@@ -140,6 +155,7 @@ public class Server {
             out.println(messaggioErroreJson);
             System.out.println("[SERVER][LAVAGNA " + idLavagna + "][CLIENT " + clientAddress + "] Inviato errore stato iniziale.");
         }
+        return idLavagna;
     }
 
     private void connettiALavagnaEsistente(String idLavagna, BufferedReader in, PrintWriter out, Socket socket) throws IOException {
@@ -183,10 +199,8 @@ public class Server {
                                 for (PrintWriter writer : writers) {
                                     if (writer != clientOut) {
                                         try {
-                                            String nuovoStatoJson = mapper.writeValueAsString(nuovoStato);
-                                            writer.println(nuovoStatoJson);
+                                            writer.println(mapper.writeValueAsString(new Logs("LAVAGNA_UPDATE", mapper.writeValueAsString(nuovoStato))));
                                             writer.flush();
-                                            System.out.println("[SERVER][LAVAGNA " + idLavagna + "] Aggiornamento inviato a un altro client.");
                                         } catch (Exception e) {
                                             System.err.println("[SERVER][LAVAGNA " + idLavagna + "] Errore durante il broadcast: " + e.getMessage());
                                         }
@@ -196,7 +210,6 @@ public class Server {
                         }
                     } catch (IOException e) {
                         System.err.println("[SERVER][LAVAGNA " + idLavagna + "][CLIENT " + clientAddress + "] Errore nella lettura dell'aggiornamento: " + e.getMessage());
-                        break; // Interrompi il loop di lettura se c'è un errore
                     }
                 }
             } catch (IOException e) {
@@ -238,6 +251,7 @@ public class Server {
         if (writers != null) {
             synchronized (writers) {
                 for (PrintWriter writer : writers) {
+                    System.err.println("AAAAAAAAAAAAAAAAAAAAAAAa");
                     if (writer != clientOut) {
                         try {
                             writer.println(mapper.writeValueAsString(new Logs("LAVAGNA_UPDATE", mapper.writeValueAsString(nuovoStato))));
