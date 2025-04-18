@@ -14,8 +14,6 @@ import javafx.util.Duration;
 import whiteboard.whiteboard.azioni.*;
 import whiteboard.whiteboard.azioni.figure.*;
 
-import java.util.ArrayList;
-
 public class LavagnaController {
     // Riferimenti agli elementi grafici (Quelli di lavagna-view.fxml)
     @FXML
@@ -34,9 +32,11 @@ public class LavagnaController {
     private CheckBox isTrasparente;
     @FXML
     private Button cBott;
+    @FXML
+    private Label lavagnaNome;
 
     //Stato Lavagna
-    ArrayList<Elementi> salvataggiLavagna =new ArrayList<Elementi>();
+    private Stato statoLavagna;
 
     // Variabili
     private GraphicsContext contestoGrafico; // Contesto grafico
@@ -104,6 +104,20 @@ public class LavagnaController {
         grandezzaBordo.valueProperty().addListener((obs, oldValue, newValue) -> setSpessoreBordo(newValue));
         isTrasparente.selectedProperty().addListener((observable, oldValue, newValue) -> colorPickerRiempimento.setDisable(newValue));
     }
+
+    @FXML
+    public void setLavagnaNome(String lavagnaNome){
+        this.lavagnaNome.setText(lavagnaNome);
+    }
+
+    @FXML
+    public void setStatoLavagna(Stato statoLavagna) {
+        this.statoLavagna = statoLavagna;
+        statoLavagna.disegnaStato(contestoGrafico,lavagna);
+    }
+
+    public Canvas getCanvas() { return lavagna; }
+    public GraphicsContext getContestoGrafico() { return contestoGrafico; }
 
     /* Metodi per impostare le proprietà del contesto grafico */
     //Linee
@@ -202,7 +216,7 @@ public class LavagnaController {
         contestoGrafico.moveTo(x, y); //Imposto il punto di partenza del path non muovo nulla
         contestoGrafico.stroke(); //NB x Diego (Che non si ricorda una minchia) : Questo fa solo il contorno non il riempimento
 
-        salvataggiLavagna.add(new Linea(x,y,getColoreTratto(),getSpessoreLinea()));
+        statoLavagna.add(new Linea(x,y,getColoreTratto(),getSpessoreLinea()));
     }
     private void disegnaFigura(double x, double y) {
         impostaStiliFigura(); // Impostiamo i colori e i bordi
@@ -226,7 +240,7 @@ public class LavagnaController {
 
         if (figura != null) { //Si potrebbe evitare ma meglio così no?!
             figura.disegna(contestoGrafico,lavagna);
-            salvataggiLavagna.add(figura);
+            statoLavagna.add(figura);
         }
     }
     private void impostaStiliFigura() {
@@ -252,7 +266,7 @@ public class LavagnaController {
         contestoGrafico.lineTo(x, y);
         contestoGrafico.stroke();
 
-        Linea linea=(Linea) salvataggiLavagna.getLast();
+        Linea linea=(Linea) statoLavagna.ottieniUltimoInserito();
         linea.continuaA(x,y);
     }
 
@@ -277,21 +291,21 @@ public class LavagnaController {
         contestoGrafico.fillRect(x - (double) grandezzaGomma.getValue() / 2,
                 y - (double) grandezzaGomma.getValue() / 2,
                 grandezzaGomma.getValue(), grandezzaGomma.getValue());
-        salvataggiLavagna.add(new Gomma("GOMMA",x,y,(double) grandezzaGomma.getValue()));
+        statoLavagna.add(new Gomma("GOMMA",x,y,(double) grandezzaGomma.getValue()));
     }
 
     @FXML
     protected void cancellaTutto() {
         sbiancaLavagna();
-        salvataggiLavagna.add(new Gomma("GOMMA_TOTALE",0,0,0));
+        statoLavagna.add(new Gomma("GOMMA_TOTALE",0,0,0));
     }
 
     //Undo
     @FXML
     private void undo(){
         sbiancaLavagna(); //Pulisci la lavagna
-        salvataggiLavagna.removeLast();
-        for (Elementi elemento: salvataggiLavagna) elemento.disegna(contestoGrafico,lavagna);
+        statoLavagna.removeLast();
+        statoLavagna.disegnaStato(contestoGrafico,lavagna);
     }
 
     // UTILITÀ

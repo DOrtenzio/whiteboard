@@ -6,6 +6,8 @@ import javafx.scene.paint.Color;
 import whiteboard.whiteboard.azioni.Figura;
 
 public class Rombo extends Figura {
+    public Rombo() {
+    }
     public Rombo(double x, double y, double dim1, double dim2, Color coloreBordo, Color coloreRiempimento, int spessoreBordo) {
         super(x, y, dim1, dim2, coloreBordo, coloreRiempimento, spessoreBordo);
     }

@@ -8,6 +8,8 @@ public class Gomma extends Elementi {
     private double x,y;
     private double spessoreGomma;
 
+    public Gomma() {
+    }
     public Gomma(String tipo, double x, double y, double spessoreGomma) {
         super(tipo); //GOMMA o GOMMA_TOTAL
         this.x=x;
@@ -18,6 +20,10 @@ public class Gomma extends Elementi {
     //getter e setter
     public void setSpessoreGomma(double spessoreGomma) { this.spessoreGomma = spessoreGomma; }
     public double getSpessoreGomma() { return spessoreGomma; }
+    public double getX() { return x; }
+    public void setX(double x) { this.x = x; }
+    public double getY() { return y; }
+    public void setY(double y) { this.y = y; }
 
     //metodo disegna
     public void disegna(GraphicsContext gc, Canvas lavagna){

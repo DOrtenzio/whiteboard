@@ -11,6 +11,8 @@ public class Linea extends Elementi {
     private Color coloreLinea;
     private double spessoreLinea;
 
+    public Linea() {
+    }
     public Linea(double inizioX, double inizioY, Color coloreLinea, double spessoreLinea) {
         super("LINEA");
         coordinate=new ArrayList<Double[]>();
@@ -36,7 +38,6 @@ public class Linea extends Elementi {
     public void setSpessoreLinea(double spessoreLinea) { this.spessoreLinea = spessoreLinea; }
     public Color getColoreLinea() { return coloreLinea; }
     public double getSpessoreLinea() { return spessoreLinea; }
-
     public ArrayList<Double[]> getCoordinate() { return coordinate; }
     public void setCoordinate(ArrayList<Double[]> coordinate) { this.coordinate = coordinate; }
 
