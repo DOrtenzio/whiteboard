@@ -3,9 +3,6 @@ module whiteboard.whiteboard {
     requires javafx.fxml;
     requires com.fasterxml.jackson.databind;
 
-    opens whiteboard.whiteboard to javafx.fxml;
-    exports whiteboard.whiteboard;
-
     exports whiteboard.whiteboard.azioni;
     opens whiteboard.whiteboard.azioni to javafx.fxml, com.fasterxml.jackson.databind;
 
