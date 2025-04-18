@@ -56,6 +56,7 @@ public class Client {
                 inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_OLD",idLavagna)));
                 this.nomeLavagna= mapper.readValue(in.readLine(), Logs.class).getParametro1();
                 statoLavagna= mapper.readValue(in.readLine(), Stato.class);
+                statoLavagna.setClient(this);
             } else { //lavagna Nuova
                 inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_NEW",nomeLavagna)));
                 this.idLavagna= mapper.readValue(in.readLine(), Logs.class).getParametro1();

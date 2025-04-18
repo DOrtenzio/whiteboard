@@ -21,6 +21,7 @@ public class Stato {
     //metodi
     public ArrayList<Elementi> getSalvataggiLavagna() { return salvataggiLavagna; }
     public void setSalvataggiLavagna(ArrayList<Elementi> salvataggiLavagna) { this.salvataggiLavagna = salvataggiLavagna; }
+    public void setClient(Client client) { this.client = client; }
 
     public void add(Elementi elemento){
         salvataggiLavagna.add(elemento);
