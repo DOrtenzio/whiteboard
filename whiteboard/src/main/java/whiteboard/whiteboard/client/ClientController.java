@@ -5,9 +5,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import whiteboard.whiteboard.azioni.LogsLavagne;
@@ -22,6 +25,7 @@ public class ClientController {
     private Label labelBase;
 
     private Client client;
+    private LogsLavagne logsLavagne;
 
     @FXML
     public void initialize(){
@@ -73,8 +77,8 @@ public class ClientController {
 
     public void postAccesso() {
         anchorBase.getChildren().clear();
-        LogsLavagne lgv = client.firstRun(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
-        creaGrigliaHome(anchorBase,lgv);
+        logsLavagne = client.firstRun(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
+        creaGrigliaHome(anchorBase,logsLavagne);
     }
 
     //Metodo per la creazione dinamica dei bottoni
@@ -109,6 +113,20 @@ public class ClientController {
                             "-fx-background-radius: 12px; " +
                             "-fx-background-color: white;"
             );
+            button.setOnMouseMoved(event -> button.setStyle(
+                    "-fx-border-color: E9EEF4; " +
+                            "-fx-border-width: 1.5px; " +
+                            "-fx-border-radius: 12px; " +
+                            "-fx-background-radius: 12px; " +
+                            "-fx-background-color: grey;"
+            ));
+            button.setOnMouseExited(event -> button.setStyle(
+                    "-fx-border-color: E9EEF4; " +
+                            "-fx-border-width: 1.5px; " +
+                            "-fx-border-radius: 12px; " +
+                            "-fx-background-radius: 12px; " +
+                            "-fx-background-color: white;"
+            ));
             //Modifiche per casi speciali
             if (button.getText().equalsIgnoreCase("+")){
                 button.setOnMouseClicked(e -> {
@@ -192,6 +210,14 @@ public class ClientController {
                             "-fx-background-radius: 12px;"));
 
                     buttonI.setOnMouseClicked(ei -> {
+                        startClient(null,textField.getText());
+                    });
+
+                    anchorBase.getChildren().addAll(textField, buttonI);
+                });
+            } else{
+                button.setOnMouseClicked(ei -> {
+                    if (!button.getText().equalsIgnoreCase("NOT_FOUND")){
                         double x = button.getLayoutX();
                         double y = button.getLayoutY();
                         String idLavagna = null;
@@ -205,13 +231,7 @@ public class ClientController {
                         }
 
                         startClient(null, idLavagna);
-                    });
-
-                    anchorBase.getChildren().addAll(textField, buttonI);
-                });
-            } else{
-                button.setOnMouseClicked(ei -> {
-                    if (!button.getText().equalsIgnoreCase("NOT_FOUND")) startClient(null,button.getText());
+                    }
                 });
             }
             anchorBase.getChildren().add(button);
@@ -227,6 +247,66 @@ public class ClientController {
         label.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
         anchorBase.getChildren().add(label);
+    }
+
+    @FXML
+    public void allBoardView(){
+        // ScrollPane
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setLayoutX(53.0);
+        scrollPane.setLayoutY(36.0);
+        scrollPane.setPrefSize(887.0, 544.0);
+
+        // VBox inside ScrollPane
+        VBox vBox = new VBox();
+        vBox.setPrefSize(870.0, 544.0);
+        vBox.setStyle("-fx-background-color: white;");
+
+        for (String lav : logsLavagne.getIdLavagneSalvate()){
+            // First empty Pane
+            Pane spacerPane = new Pane();
+            spacerPane.setPrefSize(870.0, 30.0);
+
+            // Second Pane with Button inside
+            Pane buttonPane = new Pane();
+            buttonPane.setPrefSize(870.0, 100.0);
+
+            Button button = new Button(lav.split("£")[0]+"  Id  "+lav.split("£")[1]);
+            button.setLayoutX(28.0);
+            button.setLayoutY(14.0);
+            button.setPrefSize(830.0, 72.0);
+            button.setMnemonicParsing(false);
+            button.setWrapText(true);
+            button.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+            button.setFont(new Font(24));
+            button.setStyle(
+                    "-fx-border-color: E9EEF4; " +
+                            "-fx-border-width: 1.5px; " +
+                            "-fx-border-radius: 12px; " +
+                            "-fx-background-radius: 12px; " +
+                            "-fx-background-color: white;"
+            );
+            button.setOnMouseMoved(event -> button.setStyle("-fx-background-color: grey; " +
+                    "-fx-border-color: E9EEF4; " +
+                    "-fx-border-radius: 12px; " +
+                    "-fx-background-radius: 12px;"));
+            button.setOnMouseExited(event -> button.setStyle("-fx-background-color: E9EEF4; " +
+                    "-fx-border-color: E9EEF4; " +
+                    "-fx-border-radius: 12px; " +
+                    "-fx-background-radius: 12px;"));
+            button.setOnMouseClicked(ei -> {
+                startClient(null,lav.split("£")[1]);
+            });
+
+            buttonPane.getChildren().add(button);
+
+            // Add Panes to VBox
+            vBox.getChildren().addAll(spacerPane, buttonPane);
+        }
+
+        // Set VBox as content of ScrollPane
+        scrollPane.setContent(vBox);
+        anchorBase.getChildren().add(scrollPane);
     }
 
     @FXML

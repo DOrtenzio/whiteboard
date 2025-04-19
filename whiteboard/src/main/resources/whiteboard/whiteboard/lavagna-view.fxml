@@ -32,7 +32,7 @@
                 <!-- Menu di navigazione -->
                 <Label onMouseClicked="#concludi" style="-fx-font-size: 14px;" text="&lt;---" />
                 <Label onDragDetected="#operateShare" onMouseClicked="#operateShare" style="-fx-font-size: 14px;" text="Share" />
-                <Label style="-fx-font-size: 14px;" text="Home" />
+                <Label onMouseClicked="#concludi" style="-fx-font-size: 14px;" text="Home" />
 
                 <!-- Immagine profilo (segnaposto con un cerchio grigio) -->
                 <Circle fill="GRAY" radius="15" />
