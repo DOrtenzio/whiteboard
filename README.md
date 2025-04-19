@@ -1,2 +1,1 @@
-Prossimi passi:
-implementazione corretta grafica
+# WHITEBOARD CONDIVISA : Documentazione
