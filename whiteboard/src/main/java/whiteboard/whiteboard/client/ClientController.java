@@ -93,7 +93,7 @@ public class ClientController {
         };
 
         for (Object[] params : bottoni) {
-            Button button = new Button((String) params[2]);
+            Button button = new Button(((String) params[2]).split("£")[0]); //isolo solo il nome
             button.setLayoutX((double) params[0]);
             button.setLayoutY((double) params[1]);
             button.setPrefWidth(239.0);
@@ -192,7 +192,19 @@ public class ClientController {
                             "-fx-background-radius: 12px;"));
 
                     buttonI.setOnMouseClicked(ei -> {
-                        startClient(null, textField.getText());
+                        double x = button.getLayoutX();
+                        double y = button.getLayoutY();
+                        String idLavagna = null;
+
+                        // Cerca nella matrice il bottone con la stessa posizione
+                        for (Object[] b : bottoni) {
+                            if ((double) b[0] == x && (double) b[1] == y) {
+                                idLavagna = (String) b[2];
+                                break;
+                            }
+                        }
+
+                        startClient(null, idLavagna);
                     });
 
                     anchorBase.getChildren().addAll(textField, buttonI);

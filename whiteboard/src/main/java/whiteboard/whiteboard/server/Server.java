@@ -13,6 +13,7 @@ import java.nio.file.*;
 import java.util.*;
 
 public class Server {
+
     // Variabili per socket
     private final ServerSocket serverSocket;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -67,7 +68,6 @@ public class Server {
         }
     }
 
-
     private Stato leggiStato(String idLavagna) {
         Path path = ottieniPercorso(idLavagna);
         try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
@@ -78,6 +78,31 @@ public class Server {
             System.err.println("[SERVER][FILE] Errore lettura file per la lavagna '" + idLavagna + "': " + e.getMessage());
         }
         return new Stato(null);
+    }
+
+    private int operazioniCont( boolean isInLettura) {
+        if (isInLettura) {
+            try (BufferedReader reader = new BufferedReader(new FileReader("whiteboard/src/main/resources/whiteboard/whiteboard/data/cont.txt"))) {
+                return Integer.parseInt(reader.readLine());
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+            }
+        } else {
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader("whiteboard/src/main/resources/whiteboard/whiteboard/data/cont.txt"));
+                int cont=Integer.parseInt(reader.readLine());
+                reader.close();
+
+                PrintWriter writer = new PrintWriter(new FileWriter("whiteboard/src/main/resources/whiteboard/whiteboard/data/cont.txt"));
+                writer.println(cont++);
+                writer.flush();
+                writer.close();
+                return cont+1;
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+        return -1;
     }
 
     private ArrayList<String> idLavagneAccesso(String nomeUtente){
@@ -195,7 +220,8 @@ public class Server {
     }
 
     private String gestLAVAGNA_NEW(String nomeLavagna, BufferedReader in, PrintWriter out) throws IOException {
-        String lavagnaIdNuovo = UUID.randomUUID().toString();
+        String lavagnaIdNuovo = nomeLavagna+"£"+ operazioniCont(true);
+        System.out.println("Il numero di lavagne ora è : "+operazioniCont(false));
         // Aggiunta alle liste di salvataggio
         lavagneId.add(lavagnaIdNuovo);
         lavagneNomi.add(nomeLavagna);
