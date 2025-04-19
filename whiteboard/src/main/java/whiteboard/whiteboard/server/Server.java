@@ -52,37 +52,37 @@ public class Server {
     }
 
     /*GESTIONE FILE*/
-    private Path ottieniPercorso(String nomeLavagna) {
-        return Paths.get("src/main/java/whiteboard/whiteboard/data/statiLavagne/"+nomeLavagna + ".txt");
+    private Path ottieniPercorso(String idLavagna) {
+        return Paths.get("whiteboard/src/main/resources/whiteboard/whiteboard/data/statiLavagne/" + idLavagna + ".txt");
     }
 
-    private void scriviStato(String nomeLavagna, Stato stato) {
-        Path path = ottieniPercorso(nomeLavagna);
+
+    private void scriviStato(String idLavagna, Stato stato) {
+        Path path = ottieniPercorso(idLavagna);
         try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
             String s = mapper.writeValueAsString(stato);
             writer.write(s);
         } catch (IOException e) {
-            System.err.println("[SERVER][FILE] Errore scrittura file per la lavagna '" + nomeLavagna + "': " + e.getMessage());
+            System.err.println("[SERVER][FILE] Errore scrittura file per la lavagna '" + idLavagna + "': " + e.getMessage());
         }
     }
 
 
-    private Stato leggiStato(String boardName) {
-        Path path = ottieniPercorso(boardName);
+    private Stato leggiStato(String idLavagna) {
+        Path path = ottieniPercorso(idLavagna);
         try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             if (Files.exists(path)) {
                 return mapper.readValue(reader, Stato.class);
             }
         } catch (IOException e) {
-            System.err.println("[SERVER][FILE] Errore lettura file per la lavagna '" + boardName + "': " + e.getMessage());
+            System.err.println("[SERVER][FILE] Errore lettura file per la lavagna '" + idLavagna + "': " + e.getMessage());
         }
         return new Stato(null);
     }
 
     private ArrayList<String> idLavagneAccesso(String nomeUtente){
         ArrayList<String> idLavagne = new ArrayList<String>();
-
-        try (BufferedReader br = new BufferedReader(new FileReader("src/main/java/whiteboard/whiteboard/data/accessiUtenti.txt"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader("whiteboard/src/main/resources/whiteboard/whiteboard/data/accessiUtenti.txt"))) {
             String s;
             while ((s = br.readLine()) != null) {
                 String[] split = s.split(";");
@@ -99,7 +99,7 @@ public class Server {
     }
 
     public void aggiungiAccesso(String nomeUtente, String idLavagna) {
-        File file = new File("src/main/java/whiteboard/whiteboard/data/accessiUtenti.txt");
+        File file = new File("whiteboard/src/main/resources/whiteboard/whiteboard/data/accessiUtenti.txt");
         List<String> contenutoFile = new ArrayList<>();
         boolean utenteTrovato = false;
         boolean lavagnaAggiunta = false;
@@ -131,11 +131,12 @@ public class Server {
             }
 
             // Riscrivi il file solo se è stato aggiunto qualcosa
-            if (!lavagnaAggiunta || !utenteTrovato) {
+            if (lavagnaAggiunta || !utenteTrovato) {
                 PrintWriter writer = new PrintWriter(new FileWriter(file));
                 for (String riga : contenutoFile) {
                     writer.println(riga);
                 }
+                writer.flush();
                 writer.close();
             }
 
@@ -155,7 +156,9 @@ public class Server {
 
             //Aggiorno con le conoscenze delle lavagne attuali legate all'utente
             String nomeUtente=mapper.readValue(in.readLine(), Logs.class).getParametro1(); //ottengo il nome utente
-            out.println(mapper.writeValueAsString(idLavagneAccesso(nomeUtente)));
+            LogsLavagne lg=new LogsLavagne();
+            lg.setIdLavagneSalvate(idLavagneAccesso(nomeUtente));
+            out.println(mapper.writeValueAsString(lg));
 
             String richiestaRicevuta;
             while ((richiestaRicevuta = in.readLine()) != null) {
@@ -201,7 +204,7 @@ public class Server {
         lavagneUtenti.add(new ArrayList<>());
 
         // Scrittura iniziale su file
-        scriviStato(nomeLavagna, iniziale);
+        scriviStato(lavagnaIdNuovo, iniziale);
 
         out.println(mapper.writeValueAsString(new Logs(null, lavagnaIdNuovo)));
         System.out.println("[SERVER][CLIENT] Creata nuova lavagna con ID: " + lavagnaIdNuovo + ", nome: " + nomeLavagna + ". Inviato ID al client.");
@@ -215,7 +218,7 @@ public class Server {
                 if (index != -1) {
                     lavagneStati.set(index, statoIniziale);
                     // Aggiorno il file con lo stato ricevuto
-                    scriviStato(nomeLavagna, statoIniziale);
+                    scriviStato(lavagnaIdNuovo, statoIniziale);
                 }
                 aggiungiUtenteAttivoAllaLavagna(lavagnaIdNuovo, out);
                 gestUPDATE(in, lavagnaIdNuovo, out);
@@ -234,7 +237,7 @@ public class Server {
         int index = ottieniIndiceLavagna(lavagnaId);
         if (index != -1) {
             String nomeLavagna = lavagneNomi.get(index);
-            Stato statoFile = leggiStato(nomeLavagna);
+            Stato statoFile = leggiStato(lavagnaId);
             lavagneStati.set(index, statoFile);
 
             aggiungiUtenteAttivoAllaLavagna(lavagnaId, out);
@@ -253,7 +256,7 @@ public class Server {
             int index = ottieniIndiceLavagna(lavagnaId);
             if (index != -1) {
                 lavagneStati.set(index, statoNuovo);
-                scriviStato(lavagneNomi.get(index), statoNuovo);
+                scriviStato(lavagnaId, statoNuovo);
             }
             floodingUpdate(lavagnaId, statoNuovo, outClient);
         } catch (IOException e) {
@@ -272,7 +275,7 @@ public class Server {
                         int index = ottieniIndiceLavagna(lavagnaId);
                         if (index != -1) {
                             lavagneStati.set(index, nuovoStato);
-                            scriviStato(lavagneNomi.get(index), nuovoStato);
+                            scriviStato(lavagnaId, nuovoStato);
                         }
                         floodingUpdate(lavagnaId, nuovoStato, out);
                     } catch (IOException e) {
