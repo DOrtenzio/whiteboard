@@ -57,6 +57,8 @@ public class Server {
         try ( BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));  PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), "UTF-8"), true)) {
             msgCONFERMA(out);
 
+            //TODO: INSERIRE QUI INVIO LOGSLAVAGNE
+
             String richiestaRicevuta;
             while ((richiestaRicevuta = in.readLine()) != null) {
                 System.out.println("[SERVER][CLIENT] Ricevuta richiesta: " + richiestaRicevuta);

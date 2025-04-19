@@ -9,11 +9,14 @@ import whiteboard.whiteboard.azioni.*;
 import whiteboard.whiteboard.serializer.*;
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Client {
     // Variabili locali
     private String nomeUtente, nomeLavagna, idLavagna;
     private boolean isLavagnaOn;
+    private LogsLavagne logsLavagne; //lavagne a cui posso accedere perchè create in precedenza o a cui ho già fatto accesso
 
     // Variabili per controller
     private ClientController clientController;
@@ -41,7 +44,7 @@ public class Client {
     }
 
     // Metodo per avviare la connessione e gestire la lavagna
-    public void run(String nomeLavagna, String idLavagna) {
+    public LogsLavagne firstRun(){
         try {
             // Connessione al server
             connessione = new Socket("localhost", 9999);
@@ -55,6 +58,17 @@ public class Client {
             // Verifica della connessione
             System.out.println(mapper.readValue(in.readLine(), Logs.class).getNomeDelComando()); // Restituisce "CONNECTION_ACCEPTED" o "CONNECTION_REFUSED"
 
+            //Invio al server le mie info (Nome utente) e questo mi restituisce tutti gli id delle lavagne a me associate
+            inviaMessaggio(mapper.writeValueAsString(new Logs("USER_GETLAVAGNE", this.nomeUtente)));
+            logsLavagne=mapper.readValue(in.readLine(),LogsLavagne.class);
+            return logsLavagne; //Aggiorno anche l'interfacciamento grafico
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void run(String nomeLavagna, String idLavagna) {
+        try {
             // Configurazione iniziale della lavagna
             if (nomeLavagna == null) { // Se la lavagna esiste già
                 inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_OLD", idLavagna)));
@@ -130,4 +144,7 @@ public class Client {
     public void concludi() {
         isLavagnaOn = false; //TODO: Implementa con la chiusura (Domani ora non ho più voglia)
     }
+
+    //getter
+    public String getNomeUtente() { return nomeUtente; }
 }
