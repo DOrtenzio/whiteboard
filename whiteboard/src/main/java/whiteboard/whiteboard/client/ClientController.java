@@ -216,8 +216,8 @@ public class ClientController {
                     anchorBase.getChildren().addAll(textField, buttonI);
                 });
             } else{
-                button.setOnMouseClicked(ei -> {
-                    if (!button.getText().equalsIgnoreCase("NOT_FOUND")){
+                if (!button.getText().equalsIgnoreCase("NOT_FOUND") && !button.getText().equalsIgnoreCase("...")) {
+                    button.setOnMouseClicked(ei -> {
                         double x = button.getLayoutX();
                         double y = button.getLayoutY();
                         String idLavagna = null;
@@ -231,8 +231,8 @@ public class ClientController {
                         }
 
                         startClient(null, idLavagna);
-                    }
-                });
+                    });
+                }
             }
             anchorBase.getChildren().add(button);
         }
