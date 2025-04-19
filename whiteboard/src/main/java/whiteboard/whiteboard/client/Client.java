@@ -85,7 +85,7 @@ public class Client {
             // Esegui il cambio della vista della lavagna nel thread UI
             Platform.runLater(() -> {
                 try {
-                    lavagnaController = clientController.cambiaLavagnaView(nomeLavagna, statoLavagna);
+                    lavagnaController = clientController.cambiaLavagnaView(nomeLavagna, idLavagna,statoLavagna);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -142,7 +142,8 @@ public class Client {
 
     // Metodo per concludere la connessione e fermare la lavagna
     public void concludi() {
-        isLavagnaOn = false; //TODO: Implementa con la chiusura (Domani ora non ho più voglia)
+        isLavagnaOn = false;
+        clientController.postAccesso();
     }
 
     //getter

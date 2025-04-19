@@ -30,9 +30,9 @@
                 <Pane prefHeight="30.0" prefWidth="500.0" HBox.hgrow="ALWAYS" />
 
                 <!-- Menu di navigazione -->
-                <Label style="-fx-font-size: 14px;" text="My Boards" />
-                <Label style="-fx-font-size: 14px;" text="Templates" />
-                <Label style="-fx-font-size: 14px;" text="Inspiration" />
+                <Label onMouseClicked="#concludi" style="-fx-font-size: 14px;" text="&lt;---" />
+                <Label onDragDetected="#operateShare" onMouseClicked="#operateShare" style="-fx-font-size: 14px;" text="Share" />
+                <Label style="-fx-font-size: 14px;" text="Home" />
 
                 <!-- Immagine profilo (segnaposto con un cerchio grigio) -->
                 <Circle fill="GRAY" radius="15" />
@@ -56,37 +56,27 @@
    <center>
       <AnchorPane prefHeight="722.0" prefWidth="1144.0" BorderPane.alignment="CENTER">
          <children>
-            <ImageView fx:id="pennaButton" fitHeight="46.0" fitWidth="70.0" layoutX="82.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+            <ImageView fx:id="pennaButton" fitHeight="46.0" fitWidth="70.0" layoutX="87.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
                <image>
                   <Image url="@img/write.png" />
                </image>
             </ImageView>
-            <ImageView fx:id="gommaButton" fitHeight="46.0" fitWidth="70.0" layoutX="151.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+            <ImageView fx:id="gommaButton" fitHeight="46.0" fitWidth="70.0" layoutX="142.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
                <image>
                   <Image url="@img/delete.png" />
                </image>
             </ImageView>
-            <ImageView fx:id="figureButton" fitHeight="46.0" fitWidth="70.0" layoutX="220.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+            <ImageView fx:id="figureButton" fitHeight="46.0" fitWidth="70.0" layoutX="211.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
                <image>
                   <Image url="@img/forme.png" />
                </image>
             </ImageView>
-            <ImageView fx:id="testoButton" fitHeight="46.0" fitWidth="70.0" layoutX="289.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
-               <image>
-                  <Image url="@img/text.png" />
-               </image>
-            </ImageView>
-            <ImageView fx:id="undoButton" fitHeight="46.0" fitWidth="70.0" layoutX="427.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+            <ImageView fx:id="undoButton" fitHeight="46.0" fitWidth="70.0" layoutX="278.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
                <image>
                   <Image url="@img/back.png" />
                </image>
             </ImageView>
-            <ImageView fx:id="immagini" fitHeight="46.0" fitWidth="70.0" layoutX="358.0" layoutY="37.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
-               <image>
-                  <Image url="@img/image.png" />
-               </image>
-            </ImageView>
-            <ImageView fx:id="condividi" fitHeight="53.0" fitWidth="159.0" layoutX="979.0" layoutY="31.0" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
+            <ImageView fx:id="condividi" fitHeight="53.0" fitWidth="159.0" layoutX="979.0" layoutY="31.0" onMouseClicked="#operateShare" preserveRatio="true" style="-fx-background-color: #E2EAE3;">
                <image>
                   <Image url="@img/share.png" />
                </image>
@@ -94,6 +84,19 @@
             <AnchorPane layoutX="91.0" layoutY="124.0" prefHeight="518.0" prefWidth="996.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;">
                <children>
                   <Canvas fx:id="lavagna" height="500.0" layoutX="6.0" layoutY="8.0" width="984.0" />
+                  <AnchorPane fx:id="shareBox" layoutX="726.0" layoutY="-37.0" prefHeight="200.0" prefWidth="260.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px; -fx-background-color: E9EEF4; -fx-background-radius: 12px;" visible="false">
+                     <children>
+                        <Label layoutX="14.0" layoutY="14.0" prefHeight="82.0" prefWidth="236.0" text="Se vuoi condividere la lavagna usa il codice:" wrapText="true">
+                           <font>
+                              <Font size="16.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="idLabel" layoutX="22.0" layoutY="100.0" prefHeight="41.0" prefWidth="216.0" text="id" textAlignment="CENTER" wrapText="true">
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children></AnchorPane>
                </children>
             </AnchorPane>
             <AnchorPane fx:id="lineaBox" disable="true" layoutY="124.0" prefHeight="330.0" prefWidth="88.0" style="-fx-border-color: E9EEF4; -fx-border-width: 1.5px; -fx-border-radius: 12px;" visible="false">

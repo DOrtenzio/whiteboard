@@ -2,24 +2,30 @@ package whiteboard.whiteboard.client;
 
 import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 //Locali
 import whiteboard.whiteboard.azioni.*;
 import whiteboard.whiteboard.azioni.figure.*;
+
+import java.io.IOException;
 
 public class LavagnaController {
     // Riferimenti agli elementi grafici (Quelli di lavagna-view.fxml)
     @FXML
     private Canvas lavagna;
     @FXML
-    private AnchorPane lineaBox, gommaBox, figureBox;
+    private AnchorPane lineaBox, gommaBox, figureBox,shareBox;
     @FXML
     private ImageView pennaButton, gommaButton, figureButton, undoButton;
     @FXML
@@ -33,10 +39,12 @@ public class LavagnaController {
     @FXML
     private Button cBott;
     @FXML
-    private Label lavagnaNome;
+    private Label lavagnaNome,idLabel;
 
     //Stato Lavagna
     private Stato statoLavagna;
+    private boolean isShareBoxActive=false;
+    private Client client;
 
     // Variabili
     private GraphicsContext contestoGrafico; // Contesto grafico
@@ -109,6 +117,8 @@ public class LavagnaController {
     public void setLavagnaNome(String lavagnaNome){
         this.lavagnaNome.setText(lavagnaNome);
     }
+    public void setLavagnaId(String idLavagna){ this.idLabel.setText(idLavagna); }
+    public void setClient(Client client) { this.client = client; }
 
     @FXML
     public void setStatoLavagna(Stato statoLavagna) {
@@ -318,5 +328,27 @@ public class LavagnaController {
         translateTransition.setCycleCount(1);
         translateTransition.setAutoReverse(false);
         translateTransition.play();
+    }
+
+    @FXML
+    public void operateShare(){
+        isShareBoxActive=!isShareBoxActive;
+        if (isShareBoxActive) shareBox.setVisible(true);
+        else shareBox.setVisible(false);
+    }
+
+    @FXML
+    public void concludi(){
+        try {
+            client.concludi();
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/whiteboard/whiteboard/client-view.fxml"));
+            Scene scene = new Scene(fxmlLoader.load(), 1178, 785);
+            Stage stage = (Stage) shareBox.getScene().getWindow();
+            stage.setResizable(false);
+            stage.getIcons().add(new Image(HelloApplication.class.getResource("/whiteboard/whiteboard/img/logo.png").toString()));
+            stage.setScene(scene);
+        } catch (IOException e) {
+            System.err.println(e);
+        }
     }
 }

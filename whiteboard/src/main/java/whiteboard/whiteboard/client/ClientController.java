@@ -71,7 +71,7 @@ public class ClientController {
 
     private void startClient(String nomeLavagna, String idLavagna){ new Thread(() -> client.run(nomeLavagna,idLavagna)).start(); }
 
-    private void postAccesso() {
+    public void postAccesso() {
         anchorBase.getChildren().clear();
         LogsLavagne lgv = client.firstRun(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
         creaGrigliaHome(anchorBase,lgv);
@@ -230,7 +230,7 @@ public class ClientController {
     }
 
     @FXML
-    public LavagnaController cambiaLavagnaView(String lavagnaNome, Stato statoLavagna) throws IOException {
+    public LavagnaController cambiaLavagnaView(String lavagnaNome,String idLavagna, Stato statoLavagna) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/whiteboard/whiteboard/lavagna-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1178, 785);
         Stage stage = (Stage) anchorBase.getScene().getWindow();
@@ -240,7 +240,9 @@ public class ClientController {
 
         LavagnaController lavagnaController = fxmlLoader.getController();
         lavagnaController.setLavagnaNome(lavagnaNome); //Imposto il nome
+        lavagnaController.setLavagnaId(idLavagna); //Imposto l'id nelle box share
         lavagnaController.setStatoLavagna(statoLavagna); //Disegno lo stato della lavagna che ricordiamo può essere vuoto
+        lavagnaController.setClient(client);
 
         return lavagnaController;
     }
