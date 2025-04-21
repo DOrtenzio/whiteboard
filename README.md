@@ -1,14 +1,14 @@
-# **Documentazione del Progetto Whiteboard**
+# **Documentazione Whiteboard**
 
 Questo progetto implementa un'applicazione di whiteboard collaborativa in tempo reale, permettendo a più utenti di disegnare e interagire sulla stessa lavagna virtuale. L'applicazione è strutturata secondo un'architettura client-server, utilizzando JavaFX per l'interfaccia utente e la libreria Jackson per la serializzazione e deserializzazione JSON dei dati scambiati tra client e server.
 
 ## Indice:
-* [Componenti principali](#componenti-principali)
-* [File di Dati](#file-di-dati)
-* [Flusso di esecuzione (Semplificato)](#flusso-di-esecuzione-semplificato)
-* [Flusso di esecuzione (Approfondito)](#flusso-di-esecuzione-approfondito)
-  * [Crea lavagna](#crea-lavagna)
-  * [Accedi a Lavagna](#accedi-a-lavagna)
+* [componenti-principali-componenti-principali](#componenti-principali-componenti-principali)
+* [file-di-dati-file-di-dati](#file-di-dati-file-di-dati)
+* [flusso-di-funzionamento-generale-flusso-di-esecuzione-semplificato](#flusso-di-funzionamento-generale-flusso-di-esecuzione-semplificato)
+* [scaletta-di-esecuzione-flusso-di-esecuzione-approfondito](#scaletta-di-esecuzione-flusso-di-esecuzione-approfondito)
+  * [scenario-1-utente-accede-e-crea-una-nuova-lavagna-crea-lavagna](#scenario-1-utente-accede-e-crea-una-nuova-lavagna-crea-lavagna)
+  * [scenario-2-utente-accede-a-una-lavagna-esistente-accedi-a-lavagna](#scenario-2-utente-accede-a-una-lavagna-esistente-accedi-a-lavagna)
 
 ## **Componenti Principali:** {#componenti-principali}
 
