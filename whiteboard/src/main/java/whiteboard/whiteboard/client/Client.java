@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
-import javafx.scene.control.DialogPane;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -46,7 +45,7 @@ public class Client {
     }
 
     // Metodo per avviare la connessione e gestire la lavagna
-    public LogsLavagne firstConfiguartion(){
+    public LogsLavagne firstConfiguration(){
         try {
             // Connessione al server
             connessione = new Socket("localhost", 9999);

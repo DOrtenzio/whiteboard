@@ -78,7 +78,7 @@ public class ClientController {
 
     public void postAccesso() {
         anchorBase.getChildren().clear();
-        this.logsLavagne = client.firstConfiguartion(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
+        this.logsLavagne = client.firstConfiguration(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
         backToHome();
     }
 
@@ -93,7 +93,11 @@ public class ClientController {
         i1.setVisible(true);
         i2.setVisible(true);
         i3.setVisible(false);
+
+        //Riconfigurazione di alcuni parametri causati dalla possibilità di ritorno
         this.client=client;
+        this.logsLavagne=lgv;
+
         anchorBase.getChildren().clear();
         // Lista di parametri per ciascun bottone (layoutX, layoutY, testo)
         Object[][] bottoni = {
