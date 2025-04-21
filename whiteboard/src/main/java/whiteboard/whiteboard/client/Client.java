@@ -4,7 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.DialogPane;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import whiteboard.whiteboard.azioni.*;
 import whiteboard.whiteboard.serializer.*;
 import java.io.*;
@@ -42,7 +46,7 @@ public class Client {
     }
 
     // Metodo per avviare la connessione e gestire la lavagna
-    public LogsLavagne firstRun(){
+    public LogsLavagne firstConfiguartion(){
         try {
             // Connessione al server
             connessione = new Socket("localhost", 9999);
@@ -70,15 +74,26 @@ public class Client {
             // Configurazione iniziale della lavagna
             if (nomeLavagna == null) { // Se la lavagna esiste già
                 inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_OLD", idLavagna)));
-                this.nomeLavagna = mapper.readValue(in.readLine(), Logs.class).getParametro1();
-                statoLavagna = mapper.readValue(in.readLine(), Stato.class);
-                statoLavagna.setClient(this);
-                this.idLavagna=idLavagna;
+                Logs json=mapper.readValue(in.readLine(), Logs.class);
+                if (json.getNomeDelComando().startsWith("ERR_"))
+                    mostraErrore(json.getNomeDelComando());
+                else{
+                    this.nomeLavagna =json.getParametro1();
+                    statoLavagna = mapper.readValue(in.readLine(), Stato.class);
+                    statoLavagna.setClient(this);
+                    this.idLavagna = idLavagna;
+                }
             } else { // Se la lavagna è nuova
+                this.nomeLavagna=nomeLavagna;
                 inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_NEW", nomeLavagna)));
-                this.idLavagna = mapper.readValue(in.readLine(), Logs.class).getParametro1();
-                statoLavagna = new Stato(this);
-                inviaMessaggio(mapper.writeValueAsString(statoLavagna)); // Aggiorna il server con lo stato della lavagna
+                Logs json=mapper.readValue(in.readLine(), Logs.class);
+                if (json.getNomeDelComando().startsWith("ERR_"))
+                    mostraErrore(json.getNomeDelComando());
+                else{
+                    this.idLavagna =json.getParametro1();
+                    statoLavagna = new Stato(this);
+                    inviaMessaggio(mapper.writeValueAsString(statoLavagna)); // Aggiorna il server con lo stato della lavagna
+                }
             }
 
             // Esegui il cambio della vista della lavagna nel thread UI
@@ -96,13 +111,30 @@ public class Client {
                 String linea = in.readLine();
                 if (linea != null) {
                     Logs log = mapper.readValue(linea, Logs.class);
-                    if ("LAVAGNA_UPDATE".equals(log.getNomeDelComando())) {
-                        Stato nuovoStato = mapper.readValue(log.getParametro1(), Stato.class);
-                        statoLavagna.aggiornaSeDiverso(nuovoStato, lavagnaController.getContestoGrafico(), lavagnaController.getCanvas());
+                    String cmd = log.getNomeDelComando();
+
+                    switch (cmd) {
+                        case "LAVAGNA_UPDATE":
+                            // Aggiorna lo stato grafico
+                            Stato nuovoStato = mapper.readValue(log.getParametro1(), Stato.class);
+                            statoLavagna.aggiornaSeDiverso( nuovoStato, lavagnaController.getContestoGrafico(), lavagnaController.getCanvas());
+                            break;
+
+                        case "LAVAGNA_CLOSE_ACK":
+                            inviaMessaggio(mapper.writeValueAsString(new Logs("USER_GETLAVAGNE", this.nomeUtente)));
+                            LogsLavagne lg=mapper.readValue(in.readLine(),LogsLavagne.class);
+                            Platform.runLater(() ->  this.clientController.creaGrigliaHome(this,lg));
+                            isLavagnaOn = false;  // esco dal loop
+                            break;
+
+                        default:
+                            if (cmd.startsWith("ERR_")) {
+                                mostraErrore(cmd);
+                            }
+                            // altrimenti ignoro comandi sconosciuti
                     }
                 }
             }
-
         } catch (UnknownHostException unknownHost) {
             System.err.println(unknownHost.getMessage()); // Errore se l'host non è valido
         } catch (IOException ioException) {
@@ -110,7 +142,7 @@ public class Client {
         }
     }
 
-    private void chiudiConnessione(){
+    public void chiudiConnessione(){
         try {
             // Chiusura delle risorse
             in.close();
@@ -130,6 +162,8 @@ public class Client {
         }
     }
 
+    /*METODI PER LA GESTIONE DI EVENTI*/
+
     // Metodo per inviare un messaggio al server
     private void inviaMessaggio(String msg) {
         try {
@@ -144,16 +178,30 @@ public class Client {
     // Metodo per fermare la lavagna
     public void chiudiLavagna() {
         try {
-            isLavagnaOn = false; //Fermo gli aggiornamenti
+            //CHIEDO DI INTERROMPERE IL FLOODING
             inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_CLOSE", idLavagna)));
-            //Aggiorno
-            inviaMessaggio(mapper.writeValueAsString(new Logs("USER_GETLAVAGNE", this.nomeUtente)));
-            clientController.creaGrigliaHome(mapper.readValue(in.readLine(),LogsLavagne.class));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    //getter
+    private void mostraErrore(String codiceErrore) {
+        // Mostra popup in caso di errore
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Errore");
+            alert.setHeaderText(null);
+            alert.setContentText(codiceErrore);
+            //Imposto l'icona della "finestra di alert mantenendola in tema"
+            Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+            stage.getIcons().add(new Image((getClass().getResource("/whiteboard/whiteboard/img/logo.png").toString())));
+
+            alert.showAndWait(); //Modale
+        });
+    }
+
+
+    //getter e setter
     public String getNomeUtente() { return nomeUtente; }
+    public void setClientController(ClientController clientController) { this.clientController = clientController; }
 }

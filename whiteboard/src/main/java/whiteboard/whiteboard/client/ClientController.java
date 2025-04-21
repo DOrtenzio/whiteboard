@@ -3,10 +3,7 @@ package whiteboard.whiteboard.client;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
@@ -17,6 +14,7 @@ import whiteboard.whiteboard.azioni.LogsLavagne;
 import whiteboard.whiteboard.azioni.Stato;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class ClientController {
     @FXML
@@ -27,8 +25,10 @@ public class ClientController {
     private Client client;
     private LogsLavagne logsLavagne;
 
+    public Client getClient() { return client; }
+
     @FXML
-    public void initialize(){
+    public void firstInitialize(){
         //Creazioni elementi UI
         TextField textField = new TextField();
         textField.setLayoutX(340.0);
@@ -78,19 +78,21 @@ public class ClientController {
 
     public void postAccesso() {
         anchorBase.getChildren().clear();
-        this.logsLavagne = client.firstRun(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
+        this.logsLavagne = client.firstConfiguartion(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
         backToHome();
     }
 
     @FXML
     public void backToHome(){
-        creaGrigliaHome(this.logsLavagne);
+        creaGrigliaHome(this.client,this.logsLavagne);
     }
 
     //Metodo per la creazione dinamica dei bottoni
     @FXML
-    public void creaGrigliaHome(LogsLavagne lgv) {
+    public void creaGrigliaHome(Client client, LogsLavagne lgv) {
         i3.setVisible(false);
+        this.client=client;
+        anchorBase.getChildren().clear();
         // Lista di parametri per ciascun bottone (layoutX, layoutY, testo)
         Object[][] bottoni = {
                 {93.0,   33.0, "+"},
@@ -139,6 +141,7 @@ public class ClientController {
             if (button.getText().equalsIgnoreCase("+")){
                 button.setOnMouseClicked(e -> {
                     anchorBase.getChildren().clear();
+                    i3.setVisible(true);
                     labelBase.setText("Dai "+client.getNomeUtente()+", crea una nuova Lavagna !");
 
                     TextField textField = new TextField();
@@ -183,6 +186,7 @@ public class ClientController {
             } else if (button.getText().equalsIgnoreCase("Aggiungi con codice")) {
                 button.setOnMouseClicked(e -> {
                     anchorBase.getChildren().clear();
+                    i3.setVisible(true);
                     labelBase.setText("Ora "+client.getNomeUtente()+"devi inserire il codice condivisoti !");
 
                     TextField textField = new TextField();
@@ -260,6 +264,7 @@ public class ClientController {
     @FXML
     public void allBoardView(){
         i3.setVisible(true);
+        anchorBase.getChildren().clear();
         // ScrollPane
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setLayoutX(53.0);
@@ -326,6 +331,17 @@ public class ClientController {
         stage.setResizable(false);
         stage.getIcons().add(new Image(HelloApplication.class.getResource("/whiteboard/whiteboard/img/logo.png").toString()));
         stage.setScene(scene);
+        stage.setOnCloseRequest(event -> {
+            // Mostra alert di conferma uscita
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Sei sicuro di voler uscire?");
+            alert.setTitle("Conferma uscita");
+            Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent() && result.get() != ButtonType.OK) {
+                event.consume();
+            }else{
+                client.chiudiConnessione();
+            }
+        });
 
         LavagnaController lavagnaController = fxmlLoader.getController();
         lavagnaController.setLavagnaNome(lavagnaNome); //Imposto il nome

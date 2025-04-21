@@ -12,6 +12,10 @@ public class LogsLavagne {
         this.idLavagneSalvate = new ArrayList<String>();
     }
 
+    public LogsLavagne(LogsLavagne lg) {
+        this.idLavagneSalvate= lg.getIdLavagneSalvate();
+    }
+
     public ArrayList<String> getIdLavagneSalvate() {
         return idLavagneSalvate;
     }

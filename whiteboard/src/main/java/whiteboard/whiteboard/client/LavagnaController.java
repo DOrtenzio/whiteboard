@@ -13,12 +13,13 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.util.Duration;
+import javafx.util.*;
+import java.io.IOException;
+import java.util.Optional;
+
 //Locali
 import whiteboard.whiteboard.azioni.*;
 import whiteboard.whiteboard.azioni.figure.*;
-
-import java.io.IOException;
 
 public class LavagnaController {
     // Riferimenti agli elementi grafici (Quelli di lavagna-view.fxml)
@@ -344,9 +345,23 @@ public class LavagnaController {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/whiteboard/whiteboard/client-view.fxml"));
             Scene scene = new Scene(fxmlLoader.load(), 1178, 785);
             Stage stage = (Stage) shareBox.getScene().getWindow();
+            stage.setOnCloseRequest(event -> {
+                // Mostra alert di conferma uscita
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Sei sicuro di voler uscire?");
+                alert.setTitle("Conferma uscita");
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.isPresent() && result.get() != ButtonType.OK) {
+                    event.consume();
+                }else{
+                    client.chiudiConnessione();
+                }
+            });
             stage.setResizable(false);
             stage.getIcons().add(new Image(HelloApplication.class.getResource("/whiteboard/whiteboard/img/logo.png").toString()));
             stage.setScene(scene);
+
+            ClientController clientController=fxmlLoader.getController();
+            client.setClientController(clientController);
         } catch (IOException e) {
             System.err.println(e);
         }

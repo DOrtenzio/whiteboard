@@ -1,5 +1,6 @@
 package whiteboard.whiteboard.server;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -26,7 +27,7 @@ public class Server {
     public Server() throws IOException {
         this.lavagneIdAttive = new ArrayList<>();
         this.lavagneUtentiAttivi = new ArrayList<ArrayList<PrintWriter>>();
-
+        configuraMapper();
         this.serverSocket = new ServerSocket(9999);
         System.out.println("[SERVER] Server configurato ed avviato sulla porta 9999");
     }
@@ -214,10 +215,10 @@ public class Server {
                         //Aggiorno con le conoscenze delle lavagne attuali legate all'utente
                         nomeUtente=richiesta.getParametro1(); //ottengo il nome utente
                         lg.setIdLavagneSalvate(idLavagneAccesso(nomeUtente));
-                        out.println(lg);
+                        out.println(mapper.writeValueAsString(new LogsLavagne(lg)));
                         break;
                     default:
-                        msgErr(out, "COMANDO_NON_RICONOSCIUTO");
+                        msgErr(out, "ERR_COMANDO_NON_RICONOSCIUTO");
                         break;
                 }
             }
@@ -240,7 +241,7 @@ public class Server {
         // Scrittura iniziale su file
         scriviStato(lavagnaIdNuovo, iniziale);
 
-        out.println(mapper.writeValueAsString(new Logs(null, lavagnaIdNuovo)));
+        out.println(mapper.writeValueAsString(new Logs("LAVAGNA_NEW", lavagnaIdNuovo)));
         System.out.println("[SERVER][CLIENT] Creata nuova lavagna con ID: " + lavagnaIdNuovo + ", nome: " + nomeLavagna + ". Inviato ID al client.");
 
         try {
@@ -273,7 +274,7 @@ public class Server {
                 System.out.println("[SERVER] Aggiunta lavagna attiva con ID: " + lavagnaId);
             }
             aggiungiUtenteAttivoAllaLavagna(lavagnaId, out);
-            out.println(mapper.writeValueAsString(new Logs(null, lavagnaId.split("£")[0])));
+            out.println(mapper.writeValueAsString(new Logs("LAVAGNA_OLD", lavagnaId.split("£")[0])));
             out.println(mapper.writeValueAsString(leggiStato(lavagnaId)));
         } else {
             msgERR_LAVAGNA_INTROVABILE(out, lavagnaId);
@@ -294,12 +295,18 @@ public class Server {
     }
 
     private void gestLAVAGNA_CLOSE(String lavagnaId, PrintWriter utente) {
-        if (isIdValido(lavagnaId)) {
-            List<PrintWriter> utenti = lavagneUtentiAttivi.get(lavagneIdAttive.indexOf(lavagnaId));
-            synchronized (utenti) {
-                utenti.remove(utente);
-                System.out.println("[SERVER][LAVAGNA " + lavagnaId + "] Writer rimosso.");
+        try {
+            if (isIdValido(lavagnaId)) {
+                List<PrintWriter> utenti = lavagneUtentiAttivi.get(lavagneIdAttive.indexOf(lavagnaId));
+                synchronized (utenti) {
+                    utenti.remove(utente);
+                    System.out.println("[SERVER][LAVAGNA " + lavagnaId + "] Writer rimosso.");
+                }
+                utente.println(mapper.writeValueAsString(new Logs("LAVAGNA_CLOSE_ACK", null)));
+                utente.flush();
             }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -379,7 +386,7 @@ public class Server {
     /*MESSAGGI*/
     private void msgErr(PrintWriter out, String errorMessageCode) throws IOException {
         Logs errorLog = new Logs(errorMessageCode, null);
-        out.println(mapper.writeValueAsString(errorLog));
+        out.println(mapper.writeValueAsString(new Logs(errorMessageCode,null)));
     }
     private void msgCONFERMA(PrintWriter out) throws IOException {
         out.println(mapper.writeValueAsString(new Logs("CONNECTION_ACCEPTED", null)));
@@ -387,12 +394,12 @@ public class Server {
     private void msgERR_STATO(PrintWriter out, String boardId) throws IOException {
         System.err.println("[SERVER][LAVAGNA " + boardId + "][CLIENT] Nessuno stato iniziale ricevuto.");
         cancellaLavagna(boardId);
-        msgErr(out, "ERRORE_STATO_INIZIALE");
+        msgErr(out, "ERR_STATO_INIZIALE");
         System.out.println("[SERVER][LAVAGNA " + boardId + "][CLIENT] Inviato errore stato iniziale.");
     }
     private void msgERR_LAVAGNA_INTROVABILE(PrintWriter out, String boardId) throws IOException {
         System.out.println("[SERVER][CLIENT] Lavagna con ID " + boardId + " non trovata.");
-        msgErr(out, "LAVAGNA_NON_TROVATA");
+        msgErr(out, "ERR_LAVAGNA_NON_TROVATA");
         System.out.println("[SERVER][CLIENT] Inviato errore lavagna non trovata.");
     }
 

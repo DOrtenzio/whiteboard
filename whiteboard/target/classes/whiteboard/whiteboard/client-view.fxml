@@ -28,9 +28,9 @@
                 <Pane prefHeight="30.0" prefWidth="500.0" HBox.hgrow="ALWAYS" />
 
                 <!-- Menu di navigazione -->
-                <Label onMouseClicked="#allBoardView" style="-fx-font-size: 14px;" text="Lavagne" />
-                <Label onMouseClicked="#allBoardView" style="-fx-font-size: 14px;" text="Condivise" />
-                <Label style="-fx-font-size: 14px;" text="&lt;---" />
+                <Label fx:id="i1" onMouseClicked="#allBoardView" style="-fx-font-size: 14px;" text="Lavagne" visible="false" />
+                <Label fx:id="i2" onMouseClicked="#allBoardView" style="-fx-font-size: 14px;" text="Condivise" visible="false" />
+                <Label fx:id="i3" onMouseClicked="#backToHome" style="-fx-font-size: 14px;" text="&lt;---" visible="false" />
 
                 <!-- Immagine profilo (segnaposto con un cerchio grigio) -->
                 <Circle fill="GRAY" radius="15" />
