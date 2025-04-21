@@ -1,16 +1,16 @@
-# **Documentazione del Progetto Whiteboard Collaborativa**
+# **Documentazione del Progetto Whiteboard**
 
 Questo progetto implementa un'applicazione di whiteboard collaborativa in tempo reale, permettendo a più utenti di disegnare e interagire sulla stessa lavagna virtuale. L'applicazione è strutturata secondo un'architettura client-server, utilizzando JavaFX per l'interfaccia utente e la libreria Jackson per la serializzazione e deserializzazione JSON dei dati scambiati tra client e server.
 
 ## Indice:
-* [Componenti principali](#1)
-* [File di Dati](#2)
-* [Flusso di esecuzione (Semplificato)](#3)
-* [Flusso di esecuzione (Approfondito)](#4)
-  * [Crea lavagna](#4.1)
-  * [Accedi a Lavagna](#4.2)
+* [Componenti principali](#componenti-principali)
+* [File di Dati](#file-di-dati)
+* [Flusso di esecuzione (Semplificato)](#flusso-di-esecuzione-semplificato)
+* [Flusso di esecuzione (Approfondito)](#flusso-di-esecuzione-approfondito)
+  * [Crea lavagna](#crea-lavagna)
+  * [Accedi a Lavagna](#accedi-a-lavagna)
 
-## **Componenti Principali:** {#1}
+## **Componenti Principali:** {#componenti-principali}
 
 1.  **`whiteboard.whiteboard.client` (Lato Client)**
 
@@ -103,7 +103,7 @@ Questo progetto implementa un'applicazione di whiteboard collaborativa in tempo 
 
     *   Questo package contiene classi personalizzate (`ColorSerializer` e `ColorDeserializer`) per gestire la **serializzazione e deserializzazione degli oggetti `javafx.scene.paint.Color`** in formato JSON utilizzando Jackson. Questo è necessario poiché Jackson non supporta nativamente la serializzazione di questa classe.
 
-### **File di Dati:** {#2}
+### **File di Dati:** {#file-di-dati}
 
 Il server utilizza dei file per la persistenza dei dati:
 
@@ -111,7 +111,7 @@ Il server utilizza dei file per la persistenza dei dati:
 *   `accessiUtenti.txt`: Mantiene l'associazione tra nomi utente e gli ID delle lavagne a cui hanno avuto accesso. Ogni riga ha il formato `nomeUtente;idLavagna1,idLavagna2,...`.
 *   `whiteboard/src/main/resources/whiteboard/whiteboard/data/statiLavagne/`: Questa directory contiene un file per ogni lavagna, denominato con l'ID della lavagna seguito da `.txt`. Ogni file contiene la serializzazione JSON dello stato corrente della lavagna.
 
-## **Flusso di Funzionamento Generale:** {#3}
+## **Flusso di Funzionamento Generale:** {#flusso-di-esecuzione-semplificato}
 
 1.  **Avvio Client:** L'utente avvia l'applicazione client (`HelloApplication`), che carica la schermata di login (`client-view.fxml` e `ClientController`).
 2.  **Login:** L'utente inserisce il proprio nome e fa clic su "Accedi". Viene creata un'istanza di `Client`, che tenta di connettersi al server.
@@ -124,8 +124,8 @@ Il server utilizza dei file per la persistenza dei dati:
 7.  **Sincronizzazione:** Gli altri client ricevono l'aggiornamento dal server, deserializzano lo stato e lo applicano al loro canvas, garantendo la sincronizzazione in tempo reale.
 8.  **Chiusura Lavagna/Applicazione:** Quando un utente chiude la lavagna o l'intera applicazione, il client notifica il server per interrompere gli aggiornamenti e chiude la connessione. Il server aggiorna le liste degli utenti attivi.
 
-## Scaletta di esecuzione {#4}
-> ### **Scenario 1: Utente accede e crea una nuova lavagna** {#4.1}
+## Scaletta di esecuzione {#flusso-di-esecuzione-approfondito}
+> ### **Scenario 1: Utente accede e crea una nuova lavagna** {#crea-lavagna}
 
 1.  **Avvio dell'applicazione client:**
     *   Viene eseguito il metodo `main()` nella classe `HelloApplication`.
@@ -192,7 +192,7 @@ Il server utilizza dei file per la persistenza dei dati:
         *   Imposta la `Scene` nello `Stage` e la mostra.
     *   **`LavagnaController.initialize()`**: Questo metodo viene chiamato all'avvio dell'interfaccia della lavagna. Inizializza il `GraphicsContext` per disegnare sulla `Canvas`, imposta i listener per gli eventi del mouse e dei controlli (penna, gomma, figure, colori, ecc.). Se lo stato iniziale non è vuoto, chiama `statoLavagna.disegnaStato()` per visualizzare il contenuto esistente (in questo caso è vuoto).
 
-> ### **Scenario 2: Utente accede a una lavagna esistente** {#4.2}
+> ### **Scenario 2: Utente accede a una lavagna esistente** {#accedi-a-lavagna}
 
 1.  **Passi 1 e 2:** Come nel caso della creazione, l'utente avvia l'applicazione, si autentica e visualizza la home page con la lista delle lavagne disponibili.
 
