@@ -102,7 +102,7 @@ public class Client {
                 // Esegui il cambio della vista della lavagna nel thread UI
                 Platform.runLater(() -> {
                     try {
-                        lavagnaController = clientController.cambiaLavagnaView(nomeLavagna, idLavagna,statoLavagna);
+                        lavagnaController = clientController.cambiaLavagnaView(this.nomeLavagna,this.idLavagna,statoLavagna);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
