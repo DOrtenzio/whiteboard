@@ -70,6 +70,7 @@ public class Client {
     }
 
     public void run(String nomeLavagna, String idLavagna) {
+        boolean isOkToCOntinue=false;
         try {
             // Configurazione iniziale della lavagna
             if (nomeLavagna == null) { // Se la lavagna esiste già
@@ -82,6 +83,7 @@ public class Client {
                     statoLavagna = mapper.readValue(in.readLine(), Stato.class);
                     statoLavagna.setClient(this);
                     this.idLavagna = idLavagna;
+                    isOkToCOntinue=true;
                 }
             } else { // Se la lavagna è nuova
                 this.nomeLavagna=nomeLavagna;
@@ -93,45 +95,48 @@ public class Client {
                     this.idLavagna =json.getParametro1();
                     statoLavagna = new Stato(this);
                     inviaMessaggio(mapper.writeValueAsString(statoLavagna)); // Aggiorna il server con lo stato della lavagna
+                    isOkToCOntinue=true;
                 }
             }
 
-            // Esegui il cambio della vista della lavagna nel thread UI
-            Platform.runLater(() -> {
-                try {
-                    lavagnaController = clientController.cambiaLavagnaView(nomeLavagna, idLavagna,statoLavagna);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            isLavagnaOn = true;
+            if (isOkToCOntinue){
+                // Esegui il cambio della vista della lavagna nel thread UI
+                Platform.runLater(() -> {
+                    try {
+                        lavagnaController = clientController.cambiaLavagnaView(nomeLavagna, idLavagna,statoLavagna);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                isLavagnaOn = true;
 
-            // Ciclo per ricevere aggiornamenti sulla lavagna
-            while (connessione.isConnected() && isLavagnaOn) {
-                String linea = in.readLine();
-                if (linea != null) {
-                    Logs log = mapper.readValue(linea, Logs.class);
-                    String cmd = log.getNomeDelComando();
+                // Ciclo per ricevere aggiornamenti sulla lavagna
+                while (connessione.isConnected() && isLavagnaOn) {
+                    String linea = in.readLine();
+                    if (linea != null) {
+                        Logs log = mapper.readValue(linea, Logs.class);
+                        String cmd = log.getNomeDelComando();
 
-                    switch (cmd) {
-                        case "LAVAGNA_UPDATE":
-                            // Aggiorna lo stato grafico
-                            Stato nuovoStato = mapper.readValue(log.getParametro1(), Stato.class);
-                            statoLavagna.aggiornaSeDiverso( nuovoStato, lavagnaController.getContestoGrafico(), lavagnaController.getCanvas());
-                            break;
+                        switch (cmd) {
+                            case "LAVAGNA_UPDATE":
+                                // Aggiorna lo stato grafico
+                                Stato nuovoStato = mapper.readValue(log.getParametro1(), Stato.class);
+                                statoLavagna.aggiornaSeDiverso( nuovoStato, lavagnaController.getContestoGrafico(), lavagnaController.getCanvas());
+                                break;
 
-                        case "LAVAGNA_CLOSE_ACK":
-                            inviaMessaggio(mapper.writeValueAsString(new Logs("USER_GETLAVAGNE", this.nomeUtente)));
-                            LogsLavagne lg=mapper.readValue(in.readLine(),LogsLavagne.class);
-                            Platform.runLater(() ->  this.clientController.creaGrigliaHome(this,lg));
-                            isLavagnaOn = false;  // esco dal loop
-                            break;
+                            case "LAVAGNA_CLOSE_ACK":
+                                inviaMessaggio(mapper.writeValueAsString(new Logs("USER_GETLAVAGNE", this.nomeUtente)));
+                                LogsLavagne lg=mapper.readValue(in.readLine(),LogsLavagne.class);
+                                Platform.runLater(() ->  this.clientController.creaGrigliaHome(this,lg));
+                                isLavagnaOn = false;  // esco dal loop
+                                break;
 
-                        default:
-                            if (cmd.startsWith("ERR_")) {
-                                mostraErrore(cmd);
-                            }
-                            // altrimenti ignoro comandi sconosciuti
+                            default:
+                                if (cmd.startsWith("ERR_")) {
+                                    mostraErrore(cmd);
+                                }
+                                // altrimenti ignoro comandi sconosciuti
+                        }
                     }
                 }
             }

@@ -90,6 +90,8 @@ public class ClientController {
     //Metodo per la creazione dinamica dei bottoni
     @FXML
     public void creaGrigliaHome(Client client, LogsLavagne lgv) {
+        i1.setVisible(true);
+        i2.setVisible(true);
         i3.setVisible(false);
         this.client=client;
         anchorBase.getChildren().clear();
@@ -187,7 +189,7 @@ public class ClientController {
                 button.setOnMouseClicked(e -> {
                     anchorBase.getChildren().clear();
                     i3.setVisible(true);
-                    labelBase.setText("Ora "+client.getNomeUtente()+"devi inserire il codice condivisoti !");
+                    labelBase.setText("Ora "+client.getNomeUtente()+" devi inserire il codice condivisoti !");
 
                     TextField textField = new TextField();
                     textField.setLayoutX(340.0);
