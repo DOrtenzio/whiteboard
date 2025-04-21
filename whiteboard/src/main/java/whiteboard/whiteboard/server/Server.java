@@ -19,16 +19,16 @@ public class Server {
     private final ObjectMapper mapper = new ObjectMapper();
 
     // Strutture dati
-    private final List<String> lavagneId = new ArrayList<>();
-    private final List<String> lavagneNomi = new ArrayList<>();
-    private final List<Stato> lavagneStati = new ArrayList<>();
-    private final List<List<PrintWriter>> lavagneUtenti = new ArrayList<>();
+    private final ArrayList<String> lavagneIdAttive;
+    private final ArrayList<ArrayList<PrintWriter>> lavagneUtentiAttivi;
 
     /*FASE INIZIALE*/
     public Server() throws IOException {
+        this.lavagneIdAttive = new ArrayList<>();
+        this.lavagneUtentiAttivi = new ArrayList<ArrayList<PrintWriter>>();
+
         this.serverSocket = new ServerSocket(9999);
-        configuraMapper(); //Necessario dovuto l'uso di classi non già predefinite
-        System.out.println("[SERVER] Server avviato sulla porta 9999");
+        System.out.println("[SERVER] Server configurato ed avviato sulla porta 9999");
     }
 
     private void configuraMapper() {
@@ -94,7 +94,8 @@ public class Server {
                 reader.close();
 
                 PrintWriter writer = new PrintWriter(new FileWriter("whiteboard/src/main/resources/whiteboard/whiteboard/data/cont.txt"));
-                writer.println(cont++);
+                cont++;
+                writer.println(cont);
                 writer.flush();
                 writer.close();
                 return cont+1;
@@ -179,12 +180,8 @@ public class Server {
              PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_8), true)) {
              msgCONFERMA(out);
 
-            //Aggiorno con le conoscenze delle lavagne attuali legate all'utente
-            String nomeUtente=mapper.readValue(in.readLine(), Logs.class).getParametro1(); //ottengo il nome utente
+            String nomeUtente = "";
             LogsLavagne lg=new LogsLavagne();
-            lg.setIdLavagneSalvate(idLavagneAccesso(nomeUtente));
-            out.println(mapper.writeValueAsString(lg));
-
             String richiestaRicevuta;
             while ((richiestaRicevuta = in.readLine()) != null) {
                 System.out.println("[SERVER][CLIENT] Ricevuta richiesta: " + richiestaRicevuta);
@@ -206,6 +203,19 @@ public class Server {
                             gestLAVAGNA_UPDATE(idLavagnaAttuale, richiesta.getParametro1(), out);
                         }
                         break;
+                    case "LAVAGNA_CLOSE":
+                        if (idLavagnaAttuale == null) {
+                            msgErr(out, "ERR_LAVAGNA_NON_SELEZIONATA");
+                        } else {
+                            gestLAVAGNA_CLOSE(richiesta.getParametro1(),out);
+                        }
+                        break;
+                    case "USER_GETLAVAGNE":
+                        //Aggiorno con le conoscenze delle lavagne attuali legate all'utente
+                        nomeUtente=richiesta.getParametro1(); //ottengo il nome utente
+                        lg.setIdLavagneSalvate(idLavagneAccesso(nomeUtente));
+                        out.println(lg);
+                        break;
                     default:
                         msgErr(out, "COMANDO_NON_RICONOSCIUTO");
                         break;
@@ -223,11 +233,9 @@ public class Server {
         String lavagnaIdNuovo = nomeLavagna+"£"+ operazioniCont(true);
         System.out.println("Il numero di lavagne ora è : "+operazioniCont(false));
         // Aggiunta alle liste di salvataggio
-        lavagneId.add(lavagnaIdNuovo);
-        lavagneNomi.add(nomeLavagna);
+        lavagneIdAttive.add(lavagnaIdNuovo);
         Stato iniziale = new Stato(null);
-        lavagneStati.add(iniziale);
-        lavagneUtenti.add(new ArrayList<>());
+        lavagneUtentiAttivi.add(new ArrayList<>());
 
         // Scrittura iniziale su file
         scriviStato(lavagnaIdNuovo, iniziale);
@@ -240,14 +248,11 @@ public class Server {
             System.out.println("[SERVER][LAVAGNA " + lavagnaIdNuovo + "][CLIENT] Ricevuto stato iniziale: " + statoRicevuto);
             if (statoRicevuto != null) {
                 Stato statoIniziale = mapper.readValue(statoRicevuto, Stato.class);
-                int index = ottieniIndiceLavagna(lavagnaIdNuovo);
-                if (index != -1) {
-                    lavagneStati.set(index, statoIniziale);
+                if (isIdValido(lavagnaIdNuovo)) {
                     // Aggiorno il file con lo stato ricevuto
                     scriviStato(lavagnaIdNuovo, statoIniziale);
                 }
                 aggiungiUtenteAttivoAllaLavagna(lavagnaIdNuovo, out);
-                gestUPDATE(in, lavagnaIdNuovo, out);
             } else {
                 msgERR_STATO(out, lavagnaIdNuovo);
             }
@@ -260,28 +265,26 @@ public class Server {
 
     private void gestLAVAGNA_OLD(String lavagnaId, BufferedReader in, PrintWriter out) throws IOException {
         System.out.println("[SERVER][CLIENT] Tentativo di connessione alla lavagna con ID: " + lavagnaId);
-        int index = ottieniIndiceLavagna(lavagnaId);
-        if (index != -1) {
-            String nomeLavagna = lavagneNomi.get(index);
-            Stato statoFile = leggiStato(lavagnaId);
-            lavagneStati.set(index, statoFile);
-
+        if (isIdValido(lavagnaId)) {
+            if (!lavagneIdAttive.contains(lavagnaId)) {
+                // aggiungo sia l’ID sia la lista vuota di utenti attivi
+                lavagneIdAttive.add(lavagnaId);
+                lavagneUtentiAttivi.add(new ArrayList<>());    // ← qui
+                System.out.println("[SERVER] Aggiunta lavagna attiva con ID: " + lavagnaId);
+            }
             aggiungiUtenteAttivoAllaLavagna(lavagnaId, out);
-            out.println(mapper.writeValueAsString(new Logs(null, nomeLavagna)));
-            out.println(mapper.writeValueAsString(statoFile));
-
-            gestUPDATE(in, lavagnaId, out);
+            out.println(mapper.writeValueAsString(new Logs(null, lavagnaId.split("£")[0])));
+            out.println(mapper.writeValueAsString(leggiStato(lavagnaId)));
         } else {
             msgERR_LAVAGNA_INTROVABILE(out, lavagnaId);
         }
     }
 
+
     private void gestLAVAGNA_UPDATE(String lavagnaId, String statoJSON, PrintWriter outClient) {
         try {
             Stato statoNuovo = mapper.readValue(statoJSON, Stato.class);
-            int index = ottieniIndiceLavagna(lavagnaId);
-            if (index != -1) {
-                lavagneStati.set(index, statoNuovo);
+            if (isIdValido(lavagnaId)) {
                 scriviStato(lavagnaId, statoNuovo);
             }
             floodingUpdate(lavagnaId, statoNuovo, outClient);
@@ -290,48 +293,9 @@ public class Server {
         }
     }
 
-    private void gestUPDATE(BufferedReader in, String lavagnaId, PrintWriter out) {
-        new Thread(() -> {
-            try {
-                String json;
-                while ((json = in.readLine()) != null) {
-                    System.out.println("[SERVER][LAVAGNA " + lavagnaId + "][CLIENT] Ricevuto aggiornamento: " + json);
-                    try {
-                        Stato nuovoStato = mapper.readValue(json, Stato.class);
-                        int index = ottieniIndiceLavagna(lavagnaId);
-                        if (index != -1) {
-                            lavagneStati.set(index, nuovoStato);
-                            scriviStato(lavagnaId, nuovoStato);
-                        }
-                        floodingUpdate(lavagnaId, nuovoStato, out);
-                    } catch (IOException e) {
-                        System.err.println("[SERVER][LAVAGNA " + lavagnaId + "][CLIENT] Errore nella lettura dell'aggiornamento: " + e.getMessage());
-                    }
-                }
-            } catch (IOException e) {
-                System.out.println("[SERVER][LAVAGNA " + lavagnaId + "][CLIENT] Disconnesso.");
-            } finally {
-                rimuoviUtente(lavagnaId, out);
-                System.out.println("[SERVER][LAVAGNA " + lavagnaId + "][CLIENT] PrintWriter rimosso.");
-            }
-        }).start();
-    }
-
-    private void aggiungiUtenteAttivoAllaLavagna(String lavagnaId, PrintWriter outUtente) {
-        int indexLavagna = ottieniIndiceLavagna(lavagnaId);
-        if (indexLavagna != -1) {
-            List<PrintWriter> utenti = lavagneUtenti.get(indexLavagna);
-            synchronized (utenti) { //Evitiamo possibili problemi dati dal multi client
-                utenti.add(outUtente);
-                System.out.println("[SERVER][LAVAGNA " + lavagnaId + "] Writer aggiunto.");
-            }
-        }
-    }
-
-    private void rimuoviUtente(String lavagnaId, PrintWriter utente) {
-        int idx = ottieniIndiceLavagna(lavagnaId);
-        if (idx != -1) {
-            List<PrintWriter> utenti = lavagneUtenti.get(idx);
+    private void gestLAVAGNA_CLOSE(String lavagnaId, PrintWriter utente) {
+        if (isIdValido(lavagnaId)) {
+            List<PrintWriter> utenti = lavagneUtentiAttivi.get(lavagneIdAttive.indexOf(lavagnaId));
             synchronized (utenti) {
                 utenti.remove(utente);
                 System.out.println("[SERVER][LAVAGNA " + lavagnaId + "] Writer rimosso.");
@@ -339,21 +303,32 @@ public class Server {
         }
     }
 
+    private void aggiungiUtenteAttivoAllaLavagna(String lavagnaId, PrintWriter outUtente) {
+        int idx = lavagneIdAttive.indexOf(lavagnaId);
+        if (idx == -1) return; // Se non c’è (ritorna -1), esco subito: niente da fare
+        //    Se per qualche motivo manca, aggiungo nuove liste vuote
+        while (lavagneUtentiAttivi.size() <= idx) {
+            lavagneUtentiAttivi.add(new ArrayList<>());
+        }
+        List<PrintWriter> writers = lavagneUtentiAttivi.get(idx);
+        synchronized (writers) {
+            writers.add(outUtente);
+            System.out.println("[SERVER][LAVAGNA " + lavagnaId + "] Writer aggiunto.");
+        }
+    }
+
     private void cancellaLavagna(String lavagnaId) {
-        int idx = ottieniIndiceLavagna(lavagnaId);
-        if (idx != -1) {
-            lavagneId.remove(idx);
-            lavagneNomi.remove(idx);
-            lavagneStati.remove(idx);
-            lavagneUtenti.remove(idx);
+        if (isIdValido(lavagnaId)) {
+            int index=lavagneIdAttive.indexOf(lavagnaId);
+            lavagneIdAttive.remove(index);
+            lavagneUtentiAttivi.remove(index);
             System.out.println("[SERVER][LAVAGNA " + lavagnaId + "] Rimossa.");
         }
     }
 
     private void floodingUpdate(String lavagnaId, Stato nuovoStato, PrintWriter utenteRicercato) throws IOException {
-        int indexLavagna = ottieniIndiceLavagna(lavagnaId);
-        if (indexLavagna != -1) { //Sempre se esiste
-            List<PrintWriter> utenti = lavagneUtenti.get(indexLavagna); //Lista di out delle connessioni
+        if (isIdValido(lavagnaId)) { //Sempre se esiste
+            List<PrintWriter> utenti = lavagneUtentiAttivi.get(lavagneIdAttive.indexOf(lavagnaId)); //Lista di out delle connessioni
             synchronized (utenti) {
                 for (PrintWriter utente : utenti) {
                     if (utente != utenteRicercato) {
@@ -379,8 +354,26 @@ public class Server {
         }
     }
 
-    private int ottieniIndiceLavagna(String lavagnaId) { //Serve per ricercare più facilmente gli elementi
-        return lavagneId.indexOf(lavagnaId);
+    public boolean isIdValido (String idDaCercare) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("whiteboard/src/main/resources/whiteboard/whiteboard/data/accessiUtenti.txt"))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                // Esempio riga: u1;id1,id2,id3
+                String[] parti = linea.split(";");
+                if (parti.length == 2) {
+                    String[] idList = parti[1].split(",");
+                    for (String id : idList) {
+                        if (id.trim().equals(idDaCercare)) {
+                            return true; // Trovato
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Errore nella lettura del file: " + e.getMessage());
+        }
+
+        return false; // Non trovato
     }
 
     /*MESSAGGI*/

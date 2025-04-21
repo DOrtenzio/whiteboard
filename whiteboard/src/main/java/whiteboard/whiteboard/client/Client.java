@@ -9,8 +9,6 @@ import whiteboard.whiteboard.azioni.*;
 import whiteboard.whiteboard.serializer.*;
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Client {
     // Variabili locali
@@ -75,6 +73,7 @@ public class Client {
                 this.nomeLavagna = mapper.readValue(in.readLine(), Logs.class).getParametro1();
                 statoLavagna = mapper.readValue(in.readLine(), Stato.class);
                 statoLavagna.setClient(this);
+                this.idLavagna=idLavagna;
             } else { // Se la lavagna è nuova
                 inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_NEW", nomeLavagna)));
                 this.idLavagna = mapper.readValue(in.readLine(), Logs.class).getParametro1();
@@ -93,7 +92,7 @@ public class Client {
             isLavagnaOn = true;
 
             // Ciclo per ricevere aggiornamenti sulla lavagna
-            do {
+            while (connessione.isConnected() && isLavagnaOn) {
                 String linea = in.readLine();
                 if (linea != null) {
                     Logs log = mapper.readValue(linea, Logs.class);
@@ -102,21 +101,23 @@ public class Client {
                         statoLavagna.aggiornaSeDiverso(nuovoStato, lavagnaController.getContestoGrafico(), lavagnaController.getCanvas());
                     }
                 }
-            } while (connessione.isConnected() && isLavagnaOn);
+            }
 
         } catch (UnknownHostException unknownHost) {
             System.err.println(unknownHost.getMessage()); // Errore se l'host non è valido
         } catch (IOException ioException) {
             System.err.println(ioException.getMessage()); // Errore di I/O
-        } finally {
-            try {
-                // Chiusura delle risorse
-                in.close();
-                out.close();
-                connessione.close();
-            } catch (Exception ioException) {
-                System.err.println(ioException); // Errore durante la chiusura della connessione
-            }
+        }
+    }
+
+    private void chiudiConnessione(){
+        try {
+            // Chiusura delle risorse
+            in.close();
+            out.close();
+            connessione.close();
+        } catch (Exception ioException) {
+            System.err.println(ioException); // Errore durante la chiusura della connessione
         }
     }
 
@@ -140,10 +141,17 @@ public class Client {
         }
     }
 
-    // Metodo per concludere la connessione e fermare la lavagna
-    public void concludi() {
-        isLavagnaOn = false;
-        clientController.postAccesso();
+    // Metodo per fermare la lavagna
+    public void chiudiLavagna() {
+        try {
+            isLavagnaOn = false; //Fermo gli aggiornamenti
+            inviaMessaggio(mapper.writeValueAsString(new Logs("LAVAGNA_CLOSE", idLavagna)));
+            //Aggiorno
+            inviaMessaggio(mapper.writeValueAsString(new Logs("USER_GETLAVAGNE", this.nomeUtente)));
+            clientController.creaGrigliaHome(mapper.readValue(in.readLine(),LogsLavagne.class));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     //getter

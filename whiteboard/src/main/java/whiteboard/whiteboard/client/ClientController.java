@@ -22,7 +22,7 @@ public class ClientController {
     @FXML
     private AnchorPane anchorBase;
     @FXML
-    private Label labelBase;
+    private Label labelBase,i1,i2,i3;
 
     private Client client;
     private LogsLavagne logsLavagne;
@@ -63,6 +63,8 @@ public class ClientController {
                 "-fx-background-radius: 12px;"));
 
         button.setOnMouseClicked(e -> {
+            i1.setVisible(true);
+            i2.setVisible(true);
             this.client = new Client(textField.getText(), this);
             labelBase.setText("Benvenuto/a "+client.getNomeUtente()+"! Seleziona una board o creala");
             anchorBase.getChildren().clear();
@@ -72,17 +74,23 @@ public class ClientController {
         anchorBase.getChildren().addAll(textField, button);
     }
 
-
     private void startClient(String nomeLavagna, String idLavagna){ new Thread(() -> client.run(nomeLavagna,idLavagna)).start(); }
 
     public void postAccesso() {
         anchorBase.getChildren().clear();
-        logsLavagne = client.firstRun(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
-        creaGrigliaHome(anchorBase,logsLavagne);
+        this.logsLavagne = client.firstRun(); //Richiedo l'avvio della connessione e la richiesta al server centrale delle info sulle mie lavagne
+        backToHome();
+    }
+
+    @FXML
+    public void backToHome(){
+        creaGrigliaHome(this.logsLavagne);
     }
 
     //Metodo per la creazione dinamica dei bottoni
-    private void creaGrigliaHome(AnchorPane anchorBase, LogsLavagne lgv) {
+    @FXML
+    public void creaGrigliaHome(LogsLavagne lgv) {
+        i3.setVisible(false);
         // Lista di parametri per ciascun bottone (layoutX, layoutY, testo)
         Object[][] bottoni = {
                 {93.0,   33.0, "+"},
@@ -251,6 +259,7 @@ public class ClientController {
 
     @FXML
     public void allBoardView(){
+        i3.setVisible(true);
         // ScrollPane
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setLayoutX(53.0);

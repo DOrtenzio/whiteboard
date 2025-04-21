@@ -340,7 +340,7 @@ public class LavagnaController {
     @FXML
     public void concludi(){
         try {
-            client.concludi();
+            client.chiudiLavagna();
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/whiteboard/whiteboard/client-view.fxml"));
             Scene scene = new Scene(fxmlLoader.load(), 1178, 785);
             Stage stage = (Stage) shareBox.getScene().getWindow();
