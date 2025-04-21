@@ -194,8 +194,7 @@ public class Server {
                         break;
                     case "LAVAGNA_OLD":
                         idLavagnaAttuale = richiesta.getParametro1();
-                        gestLAVAGNA_OLD(idLavagnaAttuale, in, out);
-                        aggiungiAccesso(nomeUtente,idLavagnaAttuale);
+                        if (gestLAVAGNA_OLD(idLavagnaAttuale, in, out)) aggiungiAccesso(nomeUtente,idLavagnaAttuale);
                         break;
                     case "LAVAGNA_UPDATE":
                         if (idLavagnaAttuale == null) {
@@ -264,7 +263,7 @@ public class Server {
         return lavagnaIdNuovo;
     }
 
-    private void gestLAVAGNA_OLD(String lavagnaId, BufferedReader in, PrintWriter out) throws IOException {
+    private boolean gestLAVAGNA_OLD(String lavagnaId, BufferedReader in, PrintWriter out) throws IOException {
         System.out.println("[SERVER][CLIENT] Tentativo di connessione alla lavagna con ID: " + lavagnaId);
         if (isIdValido(lavagnaId)) {
             if (!lavagneIdAttive.contains(lavagnaId)) {
@@ -276,8 +275,10 @@ public class Server {
             aggiungiUtenteAttivoAllaLavagna(lavagnaId, out);
             out.println(mapper.writeValueAsString(new Logs("LAVAGNA_OLD", lavagnaId.split("£")[0])));
             out.println(mapper.writeValueAsString(leggiStato(lavagnaId)));
+            return true;
         } else {
             msgERR_LAVAGNA_INTROVABILE(out, lavagnaId);
+            return false;
         }
     }
 

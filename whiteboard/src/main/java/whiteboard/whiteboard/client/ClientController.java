@@ -282,7 +282,7 @@ public class ClientController {
         vBox.setPrefSize(870.0, 544.0);
         vBox.setStyle("-fx-background-color: white;");
 
-        for (String lav : logsLavagne.getIdLavagneSalvate()){
+        for (String lav : this.logsLavagne.getIdLavagneSalvate()){
             // First empty Pane
             Pane spacerPane = new Pane();
             spacerPane.setPrefSize(870.0, 30.0);
