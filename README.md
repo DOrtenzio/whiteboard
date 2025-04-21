@@ -1,6 +1,131 @@
-Certamente, ecco una scaletta di esecuzione che descrive il processo di un utente che accede e crea una nuova lavagna o accede a una lavagna esistente, riportando i vari metodi chiamati e descrivendo brevemente i più importanti:
+# **Documentazione del Progetto Whiteboard Collaborativa**
 
-**Scenario 1: Utente accede e crea una nuova lavagna**
+Questo progetto implementa un'applicazione di whiteboard collaborativa in tempo reale, permettendo a più utenti di disegnare e interagire sulla stessa lavagna virtuale. L'applicazione è strutturata secondo un'architettura client-server, utilizzando JavaFX per l'interfaccia utente e la libreria Jackson per la serializzazione e deserializzazione JSON dei dati scambiati tra client e server.
+
+## Indice:
+* [Componenti principali](#1)
+* [File di Dati](#2)
+* [Flusso di esecuzione (Semplificato)](#3)
+* [Flusso di esecuzione (Approfondito)](#4)
+  * [Crea lavagna](#4.1)
+  * [Accedi a Lavagna](#4.2)
+
+## **Componenti Principali:** {#1}
+
+1.  **`whiteboard.whiteboard.client` (Lato Client)**
+
+    *   **`ClientController.java`:**
+        *   Questo controller gestisce la **vista iniziale del client**, ovvero la schermata di accesso.
+        *   Contiene elementi UI come un `TextField` per l'inserimento del nome utente e un `Button` per l'accesso.
+        *   Il metodo `firstInitialize()` crea dinamicamente questi elementi UI.
+        *   L'azione del `Button` "Accedi" crea un'istanza della classe `Client`, imposta il nome utente e passa alla schermata successiva (`postAccesso()`).
+        *   `postAccesso()` si occupa di richiedere al server l'elenco delle lavagne associate all'utente tramite `client.firstConfiguration()`.
+        *   Il metodo `backToHome()` e `creaGrigliaHome()` gestiscono la visualizzazione delle **lavagne disponibili** sotto forma di una griglia di bottoni. Questi bottoni possono rappresentare lavagne esistenti o le opzioni per crearne una nuova ("+") o aggiungerne una tramite codice ("Aggiungi con codice").
+        *   La creazione di una nuova lavagna o l'aggiunta tramite codice comporta la presentazione di un nuovo `TextField` per l'inserimento del nome o del codice e un bottone per confermare, che a sua volta avvia il client per quella specifica lavagna tramite il metodo `startClient()`.
+        *   `allBoardView()` mostra una **lista scorrevole di tutte le lavagne** a cui l'utente ha accesso. Ogni lavagna è rappresentata da un bottone contenente il nome e l'ID.
+        *   Il metodo chiave `cambiaLavagnaView()` si occupa di **caricare la vista della lavagna vera e propria** (`lavagna-view.fxml`) e il suo controller (`LavagnaController`). Imposta la scena, gestisce la chiusura della finestra con un alert di conferma e passa le informazioni della lavagna (nome, ID, stato) al `LavagnaController`.
+
+    *   **`HelloApplication.java`:**
+        *   Questa è la **classe principale dell'applicazione client**, estendendo `javafx.application.Application`.
+        *   Il metodo `start(Stage stage)` carica il file FXML per la vista iniziale del client (`client-view.fxml`) e lo imposta come scena principale.
+        *   Imposta il titolo della finestra ("SketchIt"), la rende non ridimensionabile e aggiunge un'icona.
+        *   Gestisce l'**evento di chiusura della finestra** con un alert di conferma, assicurandosi che la connessione del client venga chiusa correttamente.
+        *   Il metodo `main()` lancia l'applicazione JavaFX.
+
+    *   **`Client.java`:**
+        *   Questa classe gestisce la **logica di connessione del client al server** e la comunicazione.
+        *   Mantiene informazioni locali come `nomeUtente`, `nomeLavagna`, `idLavagna` e lo stato della lavagna (`Stato`).
+        *   Possiede riferimenti ai controller (`ClientController`, `LavagnaController`).
+        *   Le variabili per la connessione includono `Socket`, `PrintWriter` (output), `BufferedReader` (input) e un `ObjectMapper` per la gestione JSON.
+        *   Il costruttore inizializza l'`ObjectMapper` e registra un modulo personalizzato (`ColorModule`) per serializzare e deserializzare oggetti `javafx.scene.paint.Color`.
+        *   `firstConfiguration()` stabilisce la **connessione con il server** (su `localhost:9999`), invia il nome utente e riceve l'elenco delle lavagne associate.
+        *   Il metodo `run(String nomeLavagna, String idLavagna)` viene eseguito in un thread separato e gestisce la **configurazione iniziale della lavagna**, sia essa nuova o esistente, comunicando con il server.
+        *   Dopo la configurazione iniziale, avvia il cambio della vista della lavagna tramite `Platform.runLater()` per assicurare che l'aggiornamento dell'UI avvenga nel thread corretto.
+        *   Entra in un **ciclo continuo per ricevere aggiornamenti sulla lavagna** dal server (`LAVAGNA_UPDATE`) e aggiorna lo stato locale e l'interfaccia utente. Gestisce anche la notifica di chiusura della lavagna (`LAVAGNA_CLOSE_ACK`).
+        *   `chiudiConnessione()` chiude i flussi di input/output e la socket di connessione con il server.
+        *   `inviaAggiornamentoStato()` serializza e invia lo stato corrente della lavagna al server.
+        *   `inviaMessaggio()` è un metodo privato per inviare stringhe (generalmente JSON) al server.
+        *   `chiudiLavagna()` notifica il server che il client ha chiuso la lavagna attuale.
+        *   `mostraErrore()` visualizza un popup di errore in caso di comunicazione fallita o errori riportati dal server.
+
+    *   **`LavagnaController.java`:**
+        *   Questo controller gestisce l'**interfaccia utente della lavagna**.
+        *   Ha riferimenti a elementi grafici come `Canvas`, `AnchorPane` (per i box degli strumenti), `ImageView` (per i bottoni), `ColorPicker`, `Spinner`, `ChoiceBox`, `CheckBox` e `Label`.
+        *   Mantiene lo `Stato` corrente della lavagna, un flag per la condivisione (`isShareBoxActive`) e un riferimento al `Client`.
+        *   `initialize()` inizializza il `GraphicsContext` del canvas, sbianca la lavagna, imposta i valori predefiniti dei controlli e aggiunge i listener per le interazioni dell'utente (click sui bottoni, modifiche ai color picker, ecc.).
+        *   I metodi come `attivaScrittura()`, `attivaCancellazione()` e `attivaFigure()` gestiscono il **cambiamento delle modalità di disegno**, mostrando/nascondendo i pannelli degli strumenti pertinenti e aggiornando le variabili di stato.
+        *   Le funzioni `clickMouseLavagna()`, `trascinoMouseLavagna()` e `rilascioMouseLavagna()` gestiscono gli **eventi del mouse sul canvas**, avviando, continuando e terminando il disegno di linee, l'applicazione della gomma e il disegno di figure.
+        *   Metodi come `iniziaLinea()`, `continuaLinea()`, `cancella()`, `disegnaFigura()` e `sbiancaLavagna()` eseguono le **operazioni di disegno effettive sul canvas** e aggiornano lo `Stato` della lavagna.
+        *   `undo()` implementa la **funzionalità di annullamento dell'ultima azione**.
+        *   `operateShare()` gestisce la **visibilità del pannello di condivisione** (anche se la sua funzionalità specifica non è dettagliata nel codice fornito).
+        *   `concludi()` notifica la chiusura della lavagna al server e ritorna alla vista principale del client.
+        *   I metodi `setLavagnaNome()`, `setLavagnaId()` e `setStatoLavagna()` sono usati per **impostare le informazioni della lavagna** visualizzate e per disegnare lo stato iniziale ricevuto dal server.
+        *   `getCanvas()` e `getContestoGrafico()` forniscono accesso al canvas e al suo contesto grafico.
+        *   I metodi `setColoreTratto()`, `setSpessoreLinea()`, ecc., impostano le **proprietà grafiche** in base alle selezioni dell'utente.
+        *   Le animazioni per l'entrata e l'uscita dei pannelli degli strumenti sono gestite da `entrataPannello()` e `uscitaPannello()`, che utilizzano `TranslateTransition`.
+
+2.  **`whiteboard.whiteboard.server` (Lato Server)**
+
+    *   **`Server.java`:**
+        *   Questa classe rappresenta il **server dell'applicazione**.
+        *   Contiene una `ServerSocket` per accettare connessioni dai client e un `ObjectMapper` per la gestione JSON.
+        *   Utilizza `ArrayList` per tenere traccia delle **lavagne attive** (`lavagneIdAttive`) e degli **utenti attivi su ciascuna lavagna** (`lavagneUtentiAttivi`).
+        *   Il costruttore `Server()` inizializza le strutture dati, configura l'`ObjectMapper` (registrando anche `ColorSerializer` e `ColorDeserializer`) e crea la `ServerSocket` in ascolto sulla porta 9999.
+        *   `start()` è il metodo principale che entra in un **ciclo infinito per accettare nuove connessioni client** e avvia un nuovo thread per gestire ciascun client tramite `gestisciClientConnesso()`.
+        *   I metodi `ottieniPercorso()`, `scriviStato()` e `leggiStato()` gestiscono la **persistenza dello stato delle lavagne su file**. Ogni lavagna ha un file di stato separato.
+        *   `operazioniCont()` gestisce un **contatore per generare ID univoci per le nuove lavagne**, salvato nel file `cont.txt`.
+        *   `idLavagneAccesso()` legge dal file `accessiUtenti.txt` gli **ID delle lavagne a cui un determinato utente ha avuto accesso**.
+        *   `aggiungiAccesso()` aggiunge una **nuova associazione tra un utente e un ID lavagna** nel file `accessiUtenti.txt`.
+        *   `gestisciClientConnesso()` è il cuore della gestione di ciascun client. Legge le richieste dal client, le deserializza in oggetti `Logs` e le gestisce tramite uno `switch` sul nome del comando.
+            *   `LAVAGNA_NEW`: Crea una nuova lavagna, genera un ID, salva lo stato iniziale e associa l'utente alla lavagna.
+            *   `LAVAGNA_OLD`: Gestisce l'accesso a una lavagna esistente, recuperando lo stato dal file.
+            *   `LAVAGNA_UPDATE`: Riceve e salva gli aggiornamenti dello stato della lavagna e li propaga agli altri client connessi alla stessa lavagna tramite `floodingUpdate()`.
+            *   `LAVAGNA_CLOSE`: Rimuove il client dalla lista degli utenti attivi sulla lavagna.
+            *   `USER_GETLAVAGNE`: Restituisce al client l'elenco delle lavagne a cui ha accesso.
+        *   `aggiungiUtenteAttivoAllaLavagna()` aggiunge il `PrintWriter` di un client alla lista degli utenti attivi su una specifica lavagna.
+        *   `cancellaLavagna()` rimuove una lavagna dalle liste attive (anche se non sembra esserci una logica esplicita per quando questo avvenga, a parte un errore di stato iniziale).
+        *   `floodingUpdate()` **invia l'aggiornamento dello stato a tutti gli altri client connessi alla stessa lavagna**, implementando la collaborazione in tempo reale.
+        *   `chiudiConnessione()` chiude la socket di un client.
+        *   `isIdValido()` verifica se un dato ID lavagna esiste nel file `accessiUtenti.txt`.
+        *   I metodi `msgErr()`, `msgCONFERMA()`, `msgERR_STATO()` e `msgERR_LAVAGNA_INTROVABILE()` inviano **messaggi di errore o di conferma** al client.
+        *   Il metodo `main()` avvia l'istanza del server.
+        *   Il commento finale riassume brevemente il funzionamento del server.
+
+3.  **`whiteboard.whiteboard.azioni` (Azioni e Stati)**
+
+    *   Questo package (non esaminato nel dettaglio nei sorgenti forniti, ma menzionato negli import) conterrebbe le classi che rappresentano le **azioni eseguite sulla whiteboard** (ad esempio, disegno di linee, aggiunta di figure, cancellazione) e la classe `Stato`, che probabilmente **mantiene l'elenco di tutte le azioni** che compongono lo stato attuale della lavagna.
+    *   Si deduce che la classe `Logs` viene utilizzata per incapsulare i **comandi e i dati scambiati tra client e server** in formato JSON.
+    *   La classe `LogsLavagne` sembra contenere l'**elenco degli ID delle lavagne** associate a un utente.
+    *   Il sottocpackage `figure` conterrebbe le **classi per le diverse figure geometriche** disegnabili (Rettangolo, Cerchio, Triangolo, Parallelogramma, Rombo), ognuna con la propria logica di disegno.
+    *   La classe `Stato` conterrebbe probabilmente un elenco di queste azioni/figure e un metodo per "disegnare" l'intero stato della lavagna su un `GraphicsContext`.
+
+4.  **`whiteboard.whiteboard.serializer` (Serializzatori)**
+
+    *   Questo package contiene classi personalizzate (`ColorSerializer` e `ColorDeserializer`) per gestire la **serializzazione e deserializzazione degli oggetti `javafx.scene.paint.Color`** in formato JSON utilizzando Jackson. Questo è necessario poiché Jackson non supporta nativamente la serializzazione di questa classe.
+
+### **File di Dati:** {#2}
+
+Il server utilizza dei file per la persistenza dei dati:
+
+*   `cont.txt`: Contiene un intero che viene incrementato per generare nuovi ID univoci per le lavagne.
+*   `accessiUtenti.txt`: Mantiene l'associazione tra nomi utente e gli ID delle lavagne a cui hanno avuto accesso. Ogni riga ha il formato `nomeUtente;idLavagna1,idLavagna2,...`.
+*   `whiteboard/src/main/resources/whiteboard/whiteboard/data/statiLavagne/`: Questa directory contiene un file per ogni lavagna, denominato con l'ID della lavagna seguito da `.txt`. Ogni file contiene la serializzazione JSON dello stato corrente della lavagna.
+
+## **Flusso di Funzionamento Generale:** {#3}
+
+1.  **Avvio Client:** L'utente avvia l'applicazione client (`HelloApplication`), che carica la schermata di login (`client-view.fxml` e `ClientController`).
+2.  **Login:** L'utente inserisce il proprio nome e fa clic su "Accedi". Viene creata un'istanza di `Client`, che tenta di connettersi al server.
+3.  **Recupero Lavagne:** Il client invia il nome utente al server, che risponde con l'elenco degli ID delle lavagne a cui l'utente ha accesso. Questi vengono visualizzati nella schermata principale del client.
+4.  **Creazione/Accesso Lavagna:**
+    *   **Nuova Lavagna:** L'utente può creare una nuova lavagna fornendo un nome. Il client invia una richiesta al server, che crea un nuovo ID univoco, salva uno stato iniziale e restituisce l'ID al client.
+    *   **Lavagna Esistente:** L'utente può selezionare una lavagna esistente dalla lista o accedere tramite un codice. Il client invia l'ID al server, che recupera lo stato corrente dal file e lo invia al client.
+5.  **Interazione Whiteboard:** Una volta connesso a una lavagna, l'interfaccia utente passa a `lavagna-view.fxml` gestita da `LavagnaController`. L'utente può disegnare, cancellare, aggiungere figure, cambiare colori e spessori.
+6.  **Aggiornamenti in Tempo Reale:** Ogni azione eseguita dall'utente sul canvas viene registrata nello `Stato` locale del client. Questo stato (o una rappresentazione dell'azione) viene serializzato e inviato al server. Il server riceve l'aggiornamento, lo persiste su file e lo propaga a tutti gli altri client connessi alla stessa lavagna.
+7.  **Sincronizzazione:** Gli altri client ricevono l'aggiornamento dal server, deserializzano lo stato e lo applicano al loro canvas, garantendo la sincronizzazione in tempo reale.
+8.  **Chiusura Lavagna/Applicazione:** Quando un utente chiude la lavagna o l'intera applicazione, il client notifica il server per interrompere gli aggiornamenti e chiude la connessione. Il server aggiorna le liste degli utenti attivi.
+
+## Scaletta di esecuzione {#4}
+> ### **Scenario 1: Utente accede e crea una nuova lavagna** {#4.1}
 
 1.  **Avvio dell'applicazione client:**
     *   Viene eseguito il metodo `main()` nella classe `HelloApplication`.
@@ -67,7 +192,7 @@ Certamente, ecco una scaletta di esecuzione che descrive il processo di un utent
         *   Imposta la `Scene` nello `Stage` e la mostra.
     *   **`LavagnaController.initialize()`**: Questo metodo viene chiamato all'avvio dell'interfaccia della lavagna. Inizializza il `GraphicsContext` per disegnare sulla `Canvas`, imposta i listener per gli eventi del mouse e dei controlli (penna, gomma, figure, colori, ecc.). Se lo stato iniziale non è vuoto, chiama `statoLavagna.disegnaStato()` per visualizzare il contenuto esistente (in questo caso è vuoto).
 
-**Scenario 2: Utente accede a una lavagna esistente**
+> ### **Scenario 2: Utente accede a una lavagna esistente** {#4.2}
 
 1.  **Passi 1 e 2:** Come nel caso della creazione, l'utente avvia l'applicazione, si autentica e visualizza la home page con la lista delle lavagne disponibili.
 
