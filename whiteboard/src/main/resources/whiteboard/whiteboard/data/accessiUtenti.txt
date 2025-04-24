@@ -1,3 +1,5 @@
 u1;u11£0
-test1;Lavagna Bella£1,test3£3
-test2;Lavagna Bella£1,Lavagna Bella 2£2,l3£4
+test1;Lavagna Bella£1,test3£3,rocky£5
+test2;Lavagna Bella£1,Lavagna Bella 2£2,l3£4,rocky£5
+test01;MM£6
+test02;MM£6

@@ -29,10 +29,13 @@ public class Stato {
 
     public void add(Elementi elemento){
         salvataggiLavagna.add(elemento);
-        client.inviaAggiornamentoStato();
+        inviaAggiornamento();
     }
     public void removeLast(){
         salvataggiLavagna.removeLast();
+        inviaAggiornamento();
+    }
+    public void inviaAggiornamento(){
         client.inviaAggiornamentoStato();
     }
     public Elementi ottieniUltimoInserito(){ return salvataggiLavagna.getLast(); }

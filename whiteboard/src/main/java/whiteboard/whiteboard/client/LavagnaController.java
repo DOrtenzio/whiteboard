@@ -286,8 +286,9 @@ public class LavagnaController {
     private void rilascioMouseLavagna(MouseEvent mouse) {
         if (isLineaActive) {
             terminaDisegno();
+            statoLavagna.inviaAggiornamento(); //Quando termino il trascinamento quindi termino la linea
         } else if (isFigureActive) {
-            //finalizzaDisegnoFigura(mouse.getX(), mouse.getY());
+            //TODO : Aggiungi spostamento figure (Mi risulta complesso e costoso a livello di tempo e risorse quindi ho preferito continuare con la struttura server - client)
         }
     }
 
